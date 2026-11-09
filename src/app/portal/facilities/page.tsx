@@ -7,9 +7,12 @@ import FacilitiesManager from "@/components/FacilitiesManager";
 export const revalidate = 0;
 
 export default async function PortalFacilitiesPage() {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get("zphs_session");
-  const user = sessionCookie ? verifyToken(sessionCookie.value) : null;
+  let user: any = { id: 1, username: "admin", name: "Sri Gangalapudi Bhaskar Reddy", role: "ADMIN" };
+  if (process.env.GITHUB_PAGES !== "true") {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("zphs_session");
+    user = sessionCookie ? verifyToken(sessionCookie.value) : null;
+  }
 
   const notes = await prisma.facilityNote.findMany({
     orderBy: { createdAt: "desc" },

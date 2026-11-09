@@ -36,16 +36,18 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   // 1. Server-side session verification
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get("zphs_session");
+  if (process.env.GITHUB_PAGES !== "true") {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("zphs_session");
 
-  if (!sessionCookie) {
-    redirect("/login");
-  }
+    if (!sessionCookie) {
+      redirect("/login");
+    }
 
-  const admin = verifyToken(sessionCookie.value);
-  if (!admin) {
-    redirect("/login");
+    const admin = verifyToken(sessionCookie.value);
+    if (!admin) {
+      redirect("/login");
+    }
   }
 
   const sidebarLinks = [

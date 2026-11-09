@@ -25,12 +25,15 @@ import {
 export const revalidate = 0;
 
 export default async function PortalDashboardPage() {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get("zphs_session");
-  if (!sessionCookie) redirect("/login");
+  let user: any = { id: 1, username: "admin", name: "Sri Gangalapudi Bhaskar Reddy", role: "ADMIN" };
+  if (process.env.GITHUB_PAGES !== "true") {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("zphs_session");
+    if (!sessionCookie) redirect("/login");
 
-  const user = verifyToken(sessionCookie.value);
-  if (!user) redirect("/login");
+    user = verifyToken(sessionCookie.value);
+    if (!user) redirect("/login");
+  }
 
   const role = user.role || "PARENT";
 

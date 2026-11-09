@@ -1,0 +1,7 @@
+<svg width="400" height="250" viewBox="0 0 400 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="250" rx="12" fill="#fef3c7"/>
+  <text x="20" y="40" font-family="sans-serif" font-weight="bold" font-size="18" fill="#92400e">BEFORE: Dry Ground Area</text>
+  <line x1="20" y1="210" x2="380" y2="210" stroke="#78350f" stroke-width="5"/>
+  <path d="M120 210 L150 170 M250 210 L270 180" stroke="#b45309" stroke-width="3"/>
+  <text x="140" y="120" font-family="sans-serif" font-size="14" fill="#92400e">Barren land along wall</text>
+</svg>

@@ -1,0 +1,9 @@
+<svg width="400" height="250" viewBox="0 0 400 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="250" rx="12" fill="#fee2e2"/>
+  <text x="20" y="40" font-family="sans-serif" font-weight="bold" font-size="18" fill="#991b1b">BEFORE: Uncleaned Zone</text>
+  <path d="M50 180 L80 150 L110 180 L140 160 L170 190" stroke="#b91c1c" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <circle cx="80" cy="180" r="10" fill="#78350f"/>
+  <circle cx="150" cy="190" r="8" fill="#4b5563"/>
+  <rect x="220" y="160" width="30" height="30" fill="#b45309" transform="rotate(15 220 160)"/>
+  <text x="140" y="120" font-family="sans-serif" font-size="14" fill="#991b1b">Wild Grass &amp; Plastic Waste</text>
+</svg>

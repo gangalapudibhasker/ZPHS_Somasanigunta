@@ -1,0 +1,322 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                 Int      @id @default(autoincrement())
+  username           String   @unique
+  passwordHash       String
+  name               String
+  role               String   @default("ADMIN") // ADMIN, TEACHER, PARENT, STUDENT, SMC
+  email              String?
+  phone              String?
+  studentAdmissionNo String?  // Linked student admission number for PARENT and STUDENT roles
+  createdAt          DateTime @default(now())
+}
+
+model Student {
+  id                   Int      @id @default(autoincrement())
+  photo                String?  // path to local upload or placeholder
+  name                 String
+  admissionNo          String   @unique
+  rollNo               String
+  classLevel           Int      // 6, 7, 8, 9, 10
+  gender               String
+  dob                  String
+  caste                String?  @default("")
+  bloodGroup           String?
+  parentName           String
+  fatherName           String?  @default("")
+  motherName           String?  @default("")
+  mobileNo             String
+  address              String
+  aadhaarNo            String   // admin & teacher authorized visibility only
+  apaarId              String?  @default("")
+  penId                String?  @default("")
+  academicPerformance  String   @default("Average") // Excellent, Good, Average, Needs Improvement
+  attendancePercentage Float    @default(100.0)
+  coCurricular         String?
+  sportsAchievements   String?
+  generalNotes         String?
+  certificates         String?  // JSON array of certificate file paths or strings
+  createdAt            DateTime @default(now())
+}
+
+model AttendanceRecord {
+  id          Int      @id @default(autoincrement())
+  studentId   Int
+  admissionNo String
+  classLevel  Int
+  date        String   // YYYY-MM-DD
+  status      String   @default("PRESENT") // PRESENT, ABSENT, LATE, EXCUSED
+  session     String   @default("FULL_DAY") // FULL_DAY, MORNING, AFTERNOON
+  recordedBy  String?
+  remarks     String?
+  createdAt   DateTime @default(now())
+}
+
+model GradeReport {
+  id              Int      @id @default(autoincrement())
+  studentId       Int
+  admissionNo     String
+  classLevel      Int
+  examName        String   // FA-1, FA-2, SA-1, SA-2, Pre-Final
+  academicYear    String   @default("2026-2027")
+  teluguMarks     Float    @default(0)
+  hindiMarks      Float    @default(0)
+  englishMarks    Float    @default(0)
+  mathsMarks      Float    @default(0)
+  scienceMarks    Float    @default(0)
+  socialMarks     Float    @default(0)
+  totalMarks      Float    @default(0)
+  maxMarks        Float    @default(600)
+  percentage      Float    @default(0)
+  overallGrade    String   @default("B1") // A1, A2, B1, B2, C1, C2, D, E
+  gpa             Float    @default(7.0)  // 10.0 scale
+  teacherRemarks  String?
+  isPublished     Boolean  @default(true)
+  createdAt       DateTime @default(now())
+}
+
+model FacilityNote {
+  id           Int      @id @default(autoincrement())
+  facilityId   String   // ifp, scilab, mathlab, library, sports, campus
+  title        String
+  content      String
+  authorName   String
+  authorRole   String   @default("TEACHER")
+  date         String   // YYYY-MM-DD
+  createdAt    DateTime @default(now())
+}
+
+model ClassroomActivity {
+  id           Int      @id @default(autoincrement())
+  facilityId   String   // ifp, scilab, mathlab, library, sports, campus
+  title        String
+  description  String
+  classLevel   Int      // 6 to 10
+  teacherName  String
+  photoUrl     String
+  date         String   // YYYY-MM-DD
+  createdAt    DateTime @default(now())
+}
+
+model SmcMember {
+  id                Int      @id @default(autoincrement())
+  memberNumber      Int      @unique // 1 to 15
+  name              String
+  designation       String   // Chairperson, Vice-Chairperson, HM (Member Secretary), etc.
+  category          String   // PARENT, PANCHAYAT, STAFF, COMMUNITY, WOMEN
+  contactNo         String
+  photo             String?
+  isVotingEligible  Boolean  @default(true)
+  createdAt         DateTime @default(now())
+}
+
+model SmcMeeting {
+  id              Int      @id @default(autoincrement())
+  meetingNo       Int
+  date            String   // YYYY-MM-DD
+  time            String
+  location        String   @default("School Meeting Hall")
+  title           String
+  agenda          String
+  minutesSummary  String
+  attendeesCount  Int      @default(15)
+  documentsUrl    String?
+  status          String   @default("COMPLETED") // SCHEDULED, COMPLETED, ADJOURNED
+  createdAt       DateTime @default(now())
+}
+
+model SmcProposal {
+  id              Int      @id @default(autoincrement())
+  proposalCode    String   @unique // e.g. SMC-2026-001
+  title           String
+  description     String
+  category        String   // INFRASTRUCTURE, DIGITAL_CLASSROOM, DRINKING_WATER, ACADEMIC_IMPROVEMENT, SPORTS
+  budget          Float    @default(0)
+  submittedBy     String
+  submissionDate  String   // YYYY-MM-DD
+  votingDeadline  String   // YYYY-MM-DD
+  status          String   @default("ACTIVE") // ACTIVE, APPROVED, REJECTED, IMPLEMENTED
+  yesCount        Int      @default(0)
+  noCount         Int      @default(0)
+  abstainCount    Int      @default(0)
+  totalQuorum     Int      @default(15)
+  createdAt       DateTime @default(now())
+}
+
+model SmcVote {
+  id          Int      @id @default(autoincrement())
+  proposalId  Int
+  memberId    Int
+  memberName  String
+  vote        String   // YES, NO, ABSTAIN
+  comment     String?
+  votedAt     DateTime @default(now())
+}
+
+model SmcActionItem {
+  id              Int      @id @default(autoincrement())
+  proposalId      Int?
+  taskDescription String
+  assignedTo      String
+  targetDate      String   // YYYY-MM-DD
+  priority        String   @default("MEDIUM") // HIGH, MEDIUM, LOW
+  status          String   @default("IN_PROGRESS") // PENDING, IN_PROGRESS, COMPLETED
+  completionNotes String?
+  createdAt       DateTime @default(now())
+}
+
+model PtConference {
+  id                 Int      @id @default(autoincrement())
+  title              String
+  date               String   // YYYY-MM-DD
+  timeSlot           String   // e.g. "09:30 AM - 10:00 AM"
+  teacherName        String
+  classLevel         Int
+  parentName         String?
+  studentAdmissionNo String?
+  studentName        String?
+  mode               String   @default("IN_PERSON") // IN_PERSON, VIRTUAL, PHONE
+  topic              String?
+  status             String   @default("OPEN") // OPEN, BOOKED, COMPLETED, CANCELLED
+  meetingNotes       String?
+  createdAt          DateTime @default(now())
+}
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  title       String
+  message     String
+  category    String   // EXAM, ATTENDANCE, PROGRESS, SMC, EVENT, URGENT_REPORT
+  targetRole  String   @default("ALL") // ALL, PARENT, TEACHER, STUDENT, SMC, ADMIN
+  date        String   // YYYY-MM-DD
+  isRead      Boolean  @default(false)
+  actionUrl   String?
+  createdAt   DateTime @default(now())
+}
+
+model ActiveCampaign {
+  id           Int      @id @default(autoincrement())
+  title        String
+  slug         String   @unique
+  category     String   // ATTENDANCE, ACADEMIC_EXCELLENCE, DIGITAL_PEDAGOGY, CLEAN_GREEN, NUTRITION
+  targetValue  Float
+  currentValue Float
+  unit         String   // %, Students, Points, Trees
+  startDate    String
+  endDate      String
+  status       String   @default("ACTIVE") // ACTIVE, COMPLETED, UPCOMING
+  description  String
+  kpis         String?  // JSON string of metrics
+  createdAt    DateTime @default(now())
+}
+
+model GoogleDriveSyncLog {
+  id                Int      @id @default(autoincrement())
+  folderName        String   @default("School Management data")
+  backupType        String   // FULL_EXPORT, ATTENDANCE, GRADES, SMC_MODULE, STUDENT_REGISTRY
+  payloadSizeKb     Float    @default(0)
+  scriptEndpointUrl String?
+  syncStatus        String   @default("SUCCESS") // SUCCESS, PENDING, SIMULATED, FAILED
+  recordCount       Int      @default(0)
+  syncedAt          DateTime @default(now())
+  details           String?
+}
+
+model NominalRoll {
+  id                    Int      @id @default(autoincrement())
+  photo                 String?
+  signature             String?
+  studentName           String
+  fatherName            String
+  motherName            String
+  parentOccupation      String?
+  mobileNumber          String
+  aadhaarNumber         String
+  caste                 String
+  communityCategory     String   // SC / ST / BC / OC
+  religion              String
+  nationality           String   @default("Indian")
+  dob                   String
+  identificationMarks   String   // Moles / Marks
+  gender                String
+  medium                String   @default("English")
+  admissionNumber       String   @unique
+  sscRollNumber         String?  @unique
+  previousSchoolDetails String?
+  address               String
+  createdAt             DateTime @default(now())
+}
+
+model MdmLog {
+  id          Int      @id @default(autoincrement())
+  date        String   // YYYY-MM-DD
+  item        String   // RICE, EGG, CHIKKY, RAGI_JAVA
+  receivedQty Float    @default(0.0)
+  utilizedQty Float    @default(0.0)
+  balanceQty  Float    @default(0.0)
+  remarks     String?
+}
+
+model SasaActivity {
+  id          Int      @id @default(autoincrement())
+  date        String   // YYYY-MM-DD
+  title       String
+  description String
+  beforePhoto String?
+  afterPhoto  String?
+  category    String   // PLANTATION, CLEANLINESS, BEAUTIFICATION, COMMUNITY_PARTICIPATION
+  createdAt   DateTime @default(now())
+}
+
+model BookIndent {
+  id            Int      @id @default(autoincrement())
+  academicYear  String
+  classLevel    Int      // 6, 7, 8, 9, 10
+  subject       String
+  requiredQty   Int
+  availableQty  Int
+  indentedQty   Int
+  receivedQty   Int
+  balanceQty    Int
+}
+
+model OfficeFile {
+  id           Int      @id @default(autoincrement())
+  filename     String
+  originalName String
+  filePath     String
+  fileType     String   // PDF, WORD, EXCEL
+  category     String   // ADMINISTRATIVE, ACADEMIC, STUDENT, GOV_SCHEME
+  uploadDate   DateTime @default(now())
+  version      Int      @default(1)
+  uploadedBy   String?
+}
+
+model Notice {
+  id        Int      @id @default(autoincrement())
+  date      String   // YYYY-MM-DD
+  title     String
+  content   String
+  category  String   // ANNOUNCEMENT, HOLIDAY, EXAM_SCHEDULE, RESULT, GOV_ORDER
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model GalleryImage {
+  id          Int      @id @default(autoincrement())
+  category    String   // CAMPUS, CLASSROOM, SCIENCE_LAB, MATH_LAB, LIBRARY, SPORTS, EVENTS, SASA
+  filePath    String
+  title       String
+  uploadDate  DateTime @default(now())
+}

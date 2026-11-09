@@ -29,17 +29,36 @@ async function main() {
   const gallery = await prisma.galleryImage.findMany({ orderBy: { uploadDate: "desc" } });
   const smcMembers = await prisma.smcMember.findMany();
   const smcProposals = await prisma.smcProposal.findMany({ orderBy: { createdAt: "desc" } });
+  const smcMeetings = await prisma.smcMeeting.findMany({ orderBy: { date: "desc" } });
   const smcActions = await prisma.smcActionItem.findMany({ orderBy: { id: "desc" } });
+  const sasaActivities = await prisma.sasaActivity.findMany({ orderBy: { date: "desc" } });
+  const facilityNotes = await prisma.facilityNote.findMany({ orderBy: { date: "desc" } });
+  const classroomActivities = await prisma.classroomActivity.findMany({ orderBy: { date: "desc" } });
+  const officeFiles = await prisma.officeFile.findMany();
+  const nominalRolls = await prisma.nominalRoll.findMany();
+  const mdmLogs = await prisma.mdmLog.findMany();
+  const activeCampaigns = await prisma.activeCampaign.findMany();
+  const notifications = await prisma.notification.findMany();
+  const gradeReports = await prisma.gradeReport.findMany();
+  const attendanceRecords = await prisma.attendanceRecord.findMany();
+  const ptConferences = await prisma.ptConference.findMany();
+  const users = await prisma.user.findMany();
 
-  const schoolHubPath = path.join(__dirname, "../prisma/school_hub.json");
-  const schoolHub = fs.existsSync(schoolHubPath)
-    ? JSON.parse(fs.readFileSync(schoolHubPath, "utf8"))
-    : {};
+  let schoolHubRows = [];
+  try {
+    schoolHubRows = await prisma.$queryRawUnsafe(`SELECT "key", "value" FROM "SchoolHubStore"`);
+  } catch {}
+  const schoolHub = {};
+  for (const r of schoolHubRows) {
+    try {
+      schoolHub[r.key] = JSON.parse(r.value);
+    } catch {}
+  }
 
-  const activitiesPath = path.join(__dirname, "../prisma/student_activities.json");
-  const studentActivities = fs.existsSync(activitiesPath)
-    ? JSON.parse(fs.readFileSync(activitiesPath, "utf8"))
-    : [];
+  let studentActivityRows = [];
+  try {
+    studentActivityRows = await prisma.$queryRawUnsafe(`SELECT * FROM "StudentActivityPost" ORDER BY "id" DESC`);
+  } catch {}
 
   const examsPath = path.join(__dirname, "../prisma/examinations_marks.json");
   const examinations = fs.existsSync(examsPath)
@@ -50,10 +69,34 @@ async function main() {
     students: parsedStudents,
     notices,
     gallery,
-    smc: { members: smcMembers, proposals: smcProposals, actionItems: smcActions },
+    smc: {
+      members: smcMembers,
+      proposals: smcProposals,
+      meetings: smcMeetings,
+      actionItems: smcActions,
+    },
+    sasaActivities,
+    facilityNotes,
+    classroomActivities,
+    officeFiles,
+    nominalRolls,
+    mdmLogs,
+    activeCampaigns,
+    notifications,
+    gradeReports,
+    attendanceRecords,
+    ptConferences,
+    users,
     schoolHub,
-    studentActivities,
-    examinations,
+    schoolHubRows,
+    studentActivityRows,
+    studentActivities: studentActivityRows.map((row) => ({
+      ...row,
+      id: Number(row.id),
+      reactions: JSON.parse(row.reactions || "{}"),
+      comments: JSON.parse(row.comments || "[]"),
+    })),
+    examinations: gradeReports,
   };
 
   fs.writeFileSync(
@@ -61,7 +104,7 @@ async function main() {
     JSON.stringify(snapshot, null, 2),
     "utf8"
   );
-  console.log("Snapshot saved with", parsedStudents.length, "students.");
+  console.log("Complete snapshot saved with", parsedStudents.length, "students.");
 }
 
 main()

@@ -353,21 +353,43 @@ export default function AdminStudentsPage() {
 
         setLoading(true);
         const studentPayloads = [];
+        const classCounters: Record<number, number> = { 6: 0, 7: 0, 8: 0, 9: 0, 10: 0 };
+
+        const parseExcelClass = (rawClass: any, rawRoll: any): number => {
+          const s = String(rawClass || "").trim().toUpperCase();
+          if (s === "VI" || s === "6" || s === "6TH") return 6;
+          if (s === "VII" || s === "7" || s === "7TH") return 7;
+          if (s === "VIII" || s === "8" || s === "8TH") return 8;
+          if (s === "IX" || s === "9" || s === "9TH") return 9;
+          if (s === "X" || s === "10" || s === "10TH") return 10;
+          const d = parseInt(s.replace(/\D/g, ""), 10);
+          if (d >= 6 && d <= 10) return d;
+          const r = parseInt(String(rawRoll || ""), 10);
+          if (r >= 6 && r <= 10) return r;
+          return 6;
+        };
 
         for (const row of rows) {
           // Map spreadsheet fields to api fields
-          const name = row["Name"] || row["studentName"] || "";
-          const admissionNo = String(row["Admission No"] || row["admissionNo"] || "");
-          
-          if (!name || !admissionNo) {
+          const name = String(row["Name"] || row["studentName"] || "").trim();
+          if (!name) {
             continue;
           }
+
+          const parsedClass = parseExcelClass(row["Class"] ?? row["classLevel"], row["Roll No"]);
+          classCounters[parsedClass] = (classCounters[parsedClass] || 0) + 1;
+          const seqInClass = classCounters[parsedClass];
+          const entryYearMap: Record<number, number> = { 6: 2026, 7: 2025, 8: 2024, 9: 2023, 10: 2022 };
+          const entryYear = entryYearMap[parsedClass] || 2026;
+
+          const rawAdm = String(row["Admission No"] || row["admissionNo"] || "").trim();
+          const admissionNo = rawAdm || `ADM/${entryYear}/${parsedClass}${String(seqInClass).padStart(2, "0")}`;
 
           const studentPayload = {
             name,
             admissionNo,
-            rollNo: row["Roll No"] !== undefined ? String(row["Roll No"]) : undefined,
-            classLevel: row["Class"] !== undefined ? parseInt(String(row["Class"]).replace(/\D/g, "")) : (row["classLevel"] !== undefined ? parseInt(row["classLevel"]) : undefined),
+            rollNo: String(seqInClass),
+            classLevel: parsedClass,
             gender: row["Gender"] || row["gender"] || undefined,
             dob: row["Date of Birth"] || row["dob"] || undefined,
             caste: row["Caste"] || row["caste"] || undefined,

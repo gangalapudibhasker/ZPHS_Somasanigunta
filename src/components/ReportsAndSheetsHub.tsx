@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { FileSpreadsheet, BarChart3, Printer, RefreshCw, Download, ExternalLink } from "lucide-react";
 import * as XLSX from "xlsx";
 
@@ -132,6 +132,27 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
       boys,
       girls,
       count: list.length,
+    };
+  });
+
+  // 3. Caste-wise & Class-wise Cross-Tabulation Matrix
+  const casteClassMatrix = grades.map((g) => {
+    const classList = students.filter((s) => String(s.classLevel ?? s.grade) === g);
+    const byCaste: Record<string, { boys: number; girls: number; total: number }> = {};
+    for (const c of castes) {
+      const cl = classList.filter((s) => normalizeCaste(s.caste) === c);
+      const b = cl.filter((s) => s.gender === "Boy" || s.gender === "Male").length;
+      const gl = cl.filter((s) => s.gender === "Girl" || s.gender === "Female").length;
+      byCaste[c] = { boys: b, girls: gl, total: cl.length };
+    }
+    const totalBoys = classList.filter((s) => s.gender === "Boy" || s.gender === "Male").length;
+    const totalGirls = classList.filter((s) => s.gender === "Girl" || s.gender === "Female").length;
+    return {
+      grade: g,
+      byCaste,
+      totalBoys,
+      totalGirls,
+      total: classList.length,
     };
   });
 
@@ -343,6 +364,130 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      {/* Table 3: Caste-wise & Class-wise Enrolment Matrix */}
+      <div className="card" style={{ padding: "1.5rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
+          <h2 style={{ fontSize: "1.15rem", fontWeight: 800, color: "#0f172a", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+            <FileSpreadsheet size={18} style={{ color: "#1e3a8a" }} />
+            3. Caste-wise &amp; Class-wise Enrolment Report
+          </h2>
+          <span className="badge badge-primary">Classes 6 to 10 • Total: {students.length} Students</span>
+        </div>
+
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th rowSpan={2} style={{ ...thStyle, verticalAlign: "middle" }}>
+                  Class
+                </th>
+                {castes.map((c) => (
+                  <th
+                    key={c}
+                    colSpan={3}
+                    style={{ ...thStyle, textAlign: "center", borderBottom: "1px solid #475569" }}
+                  >
+                    {c}
+                  </th>
+                ))}
+                <th
+                  colSpan={3}
+                  style={{ ...thStyle, textAlign: "center", backgroundColor: "#0f172a", borderBottom: "1px solid #475569" }}
+                >
+                  TOTAL ENROLMENT
+                </th>
+              </tr>
+              <tr>
+                {castes.map((c) => (
+                  <React.Fragment key={`${c}-sub`}>
+                    <th style={{ ...thStyle, textAlign: "center", fontSize: "0.78rem", padding: "7px 8px", backgroundColor: "#334155" }}>
+                      Boys
+                    </th>
+                    <th style={{ ...thStyle, textAlign: "center", fontSize: "0.78rem", padding: "7px 8px", backgroundColor: "#334155" }}>
+                      Girls
+                    </th>
+                    <th style={{ ...thStyle, textAlign: "center", fontSize: "0.78rem", padding: "7px 8px", backgroundColor: "#1e293b" }}>
+                      Total
+                    </th>
+                  </React.Fragment>
+                ))}
+                <th style={{ ...thStyle, textAlign: "center", fontSize: "0.78rem", padding: "7px 8px", backgroundColor: "#0f172a" }}>
+                  Boys
+                </th>
+                <th style={{ ...thStyle, textAlign: "center", fontSize: "0.78rem", padding: "7px 8px", backgroundColor: "#0f172a" }}>
+                  Girls
+                </th>
+                <th style={{ ...thStyle, textAlign: "center", fontSize: "0.78rem", padding: "7px 8px", backgroundColor: "#0f172a" }}>
+                  Total
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {casteClassMatrix.map((row) => (
+                <tr key={row.grade}>
+                  <td style={{ ...tdStyle, fontWeight: 700, whiteSpace: "nowrap" }}>Class {row.grade}</td>
+                  {castes.map((c) => {
+                    const cell = row.byCaste[c] || { boys: 0, girls: 0, total: 0 };
+                    return (
+                      <React.Fragment key={`${row.grade}-${c}`}>
+                        <td style={{ ...tdStyle, textAlign: "center", color: "#1d4ed8", fontWeight: 600 }}>
+                          {cell.boys}
+                        </td>
+                        <td style={{ ...tdStyle, textAlign: "center", color: "#be185d", fontWeight: 600 }}>
+                          {cell.girls}
+                        </td>
+                        <td style={{ ...tdStyle, textAlign: "center", fontWeight: 800, backgroundColor: "#f8fafc" }}>
+                          {cell.total}
+                        </td>
+                      </React.Fragment>
+                    );
+                  })}
+                  <td style={{ ...tdStyle, textAlign: "center", fontWeight: 800, color: "#1d4ed8", backgroundColor: "#eff6ff" }}>
+                    {row.totalBoys}
+                  </td>
+                  <td style={{ ...tdStyle, textAlign: "center", fontWeight: 800, color: "#be185d", backgroundColor: "#fdf2f8" }}>
+                    {row.totalGirls}
+                  </td>
+                  <td style={{ ...tdStyle, textAlign: "center", fontWeight: 900, color: "#0f172a", backgroundColor: "#e2e8f0" }}>
+                    {row.total}
+                  </td>
+                </tr>
+              ))}
+              <tr style={{ backgroundColor: "#f1f5f9" }}>
+                <td style={{ ...tdStyle, fontWeight: 900 }}>GRAND TOTAL</td>
+                {castes.map((c) => {
+                  const colBoys = casteClassMatrix.reduce((acc, r) => acc + (r.byCaste[c]?.boys || 0), 0);
+                  const colGirls = casteClassMatrix.reduce((acc, r) => acc + (r.byCaste[c]?.girls || 0), 0);
+                  const colTotal = casteClassMatrix.reduce((acc, r) => acc + (r.byCaste[c]?.total || 0), 0);
+                  return (
+                    <React.Fragment key={`total-${c}`}>
+                      <td style={{ ...tdStyle, textAlign: "center", fontWeight: 800, color: "#1d4ed8" }}>
+                        {colBoys}
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: "center", fontWeight: 800, color: "#be185d" }}>
+                        {colGirls}
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: "center", fontWeight: 900, color: "#1e3a8a" }}>
+                        {colTotal}
+                      </td>
+                    </React.Fragment>
+                  );
+                })}
+                <td style={{ ...tdStyle, textAlign: "center", fontWeight: 900, color: "#1d4ed8", backgroundColor: "#dbeafe" }}>
+                  {casteClassMatrix.reduce((a, b) => a + b.totalBoys, 0)}
+                </td>
+                <td style={{ ...tdStyle, textAlign: "center", fontWeight: 900, color: "#be185d", backgroundColor: "#fce7f3" }}>
+                  {casteClassMatrix.reduce((a, b) => a + b.totalGirls, 0)}
+                </td>
+                <td style={{ ...tdStyle, textAlign: "center", fontWeight: 900, fontSize: "1rem", backgroundColor: "#cbd5e1" }}>
+                  {students.length}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

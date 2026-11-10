@@ -111,6 +111,9 @@ export default async function PublicLayout({
             <Link href="/study-certificate" className="flex items-center gap-1.5" style={{ padding: "0.9rem 0.9rem", fontWeight: "600", fontSize: "0.88rem", borderBottom: "3px solid transparent" }}>
               <Award size={15} /> Study Certificate
             </Link>
+            <Link href="/portfolios" className="flex items-center gap-1.5" style={{ padding: "0.9rem 0.9rem", fontWeight: "600", fontSize: "0.88rem", borderBottom: "3px solid transparent" }}>
+              <FileText size={15} /> Portfolios
+            </Link>
             <Link href="/events" className="flex items-center gap-1.5" style={{ padding: "0.9rem 0.9rem", fontWeight: "600", fontSize: "0.88rem", borderBottom: "3px solid transparent" }}>
               <Calendar size={15} /> Events
             </Link>
@@ -125,9 +128,6 @@ export default async function PublicLayout({
             </Link>
             <Link href="/reports" className="flex items-center gap-1.5" style={{ padding: "0.9rem 0.9rem", fontWeight: "600", fontSize: "0.88rem", borderBottom: "3px solid transparent" }}>
               <BarChart3 size={15} /> Reports & Sheets
-            </Link>
-            <Link href="/portfolios" className="flex items-center gap-1.5" style={{ padding: "0.9rem 0.9rem", fontWeight: "600", fontSize: "0.88rem", borderBottom: "3px solid transparent" }}>
-              <FileText size={15} /> Portfolios
             </Link>
             <Link href="/gallery" className="flex items-center gap-1.5" style={{ padding: "0.9rem 0.9rem", fontWeight: "600", fontSize: "0.88rem", borderBottom: "3px solid transparent" }}>
               <Camera size={15} /> Gallery

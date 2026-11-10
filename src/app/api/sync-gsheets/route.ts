@@ -27,10 +27,10 @@ async function runGsheets(args: string[]) {
 
 export async function POST() {
   try {
-    // 1. Fetch all live data from SQLite
-    const students = await prisma.student.findMany({
-      orderBy: [{ classLevel: "desc" }, { rollNo: "asc" }],
-    });
+    // 1. Fetch all live data from SQLite (including raw columns apaarId, penId, fatherName, motherName, caste)
+    const students = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT * FROM "Student" ORDER BY "classLevel" ASC, CAST("rollNo" AS INTEGER) ASC`
+    );
 
     const hubRows = await prisma.$queryRawUnsafe<Array<{ key: string; value: string }>>(
       `SELECT "key", "value" FROM "SchoolHubStore"`
@@ -89,12 +89,12 @@ export async function POST() {
         String(s.caste || "OC"),
         String(s.dob || ""),
         String(s.bloodGroup || ""),
-        String(s.aadharNumber || ""),
-        String(s.apaarId || ""),
+        String(s.aadhaarNo || s.aadharNumber || ""),
+        String(s.apaarId || "Not Available"),
         String(s.penId || ""),
         String(s.fatherName || s.parentName || ""),
         String(s.motherName || ""),
-        String(s.phone || ""),
+        String(s.mobileNo || s.phone || ""),
         String(s.address || ""),
         String(s.attendancePercentage ?? ""),
       ]),

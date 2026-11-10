@@ -92,7 +92,7 @@ export async function GET(request: Request) {
     >(`SELECT "id", "apaarId", "penId", "fatherName", "motherName", "caste", "admissionYear", "admissionFormData" FROM "Student"`);
     const extraMap = new Map(extraRows.map((r) => [Number(r.id), r]));
 
-    // If not admin, mask Aadhaar numbers for security
+    // Return full student details (including Aadhaar for official certificates/forms)
     const sanitizedStudents = students.map((s) => {
       const extra = extraMap.get(s.id);
       let parsedAdmissionFormData = {};
@@ -101,7 +101,7 @@ export async function GET(request: Request) {
           parsedAdmissionFormData = JSON.parse(extra.admissionFormData);
         } catch {}
       }
-      const withIds = {
+      return {
         ...s,
         apaarId: extra?.apaarId || "",
         penId: extra?.penId || "",
@@ -110,11 +110,7 @@ export async function GET(request: Request) {
         caste: extra?.caste || "",
         admissionYear: inferAdmissionYear(s.admissionNo, extra?.admissionYear),
         admissionFormData: parsedAdmissionFormData,
-      };
-      if (admin) return withIds; // Admin gets full details
-      return {
-        ...withIds,
-        aadhaarNo: s.aadhaarNo ? `XXXX-XXXX-${s.aadhaarNo.replace(/\s/g, "").slice(-4)}` : "",
+        aadhaarNo: s.aadhaarNo || "",
       };
     });
 

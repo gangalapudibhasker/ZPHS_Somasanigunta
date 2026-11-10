@@ -24,6 +24,17 @@ import * as XLSX from "xlsx";
 const LIVE_GOOGLE_SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1BujOFaqIAwkv-FJowUR7VVQxxFeXOaH7p9Ftu-9dggE/edit";
 
+const ZPHS_STAFF_MEMBERS = [
+  "Sri Gangalapudi Bhaskar Reddy — Headmaster / SA (Mathematics)",
+  "Sri Sreeram Ravi Kumar — School Assistant (English)",
+  "Smt. Gunukula Haritha — School Assistant (Biological Science)",
+  "Smt. Muttaraju Venkata Jayaprada — School Assistant (Hindi)",
+  "Sri Kallu Sreekrishna — School Assistant (Social Studies)",
+  "Smt. Shaik Shahida — School Assistant (Physical Science)",
+  "Sri Layesetty Muneeswaraiah — School Assistant (Telugu)",
+  "Smt. Vasamthamma — Support Staff (Aya)",
+];
+
 export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boolean }) {
   const [students, setStudents] = useState<any[]>([]);
   const [hubData, setHubData] = useState<any>({});
@@ -815,11 +826,8 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
                 <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>
                   Uploaded By (Teacher / Staff Name) *
                 </label>
-                <input
-                  type="text"
+                <select
                   required
-                  list="staff-names-list"
-                  placeholder="e.g. Smt. K. Vani / Sri P. Ramanaiah"
                   value={teacherName}
                   onChange={(e) => setTeacherName(e.target.value)}
                   style={{
@@ -829,14 +837,17 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
                     border: "1.5px solid #cbd5e1",
                     backgroundColor: "#fff",
                     fontSize: "0.88rem",
+                    fontWeight: 600,
+                    color: teacherName ? "#0f172a" : "#64748b",
                   }}
-                />
-                <datalist id="staff-names-list">
-                  <option value="Sri Gangalapudi Bhaskar Reddy (Headmaster)" />
-                  <option value="Smt. K. Vani (Physical Science)" />
-                  <option value="Sri P. Ramanaiah (Mathematics)" />
-                  <option value="School Faculty / Staff Member" />
-                </datalist>
+                >
+                  <option value="">-- Select ZPHS Staff Member --</option>
+                  {ZPHS_STAFF_MEMBERS.map((staff) => (
+                    <option key={staff} value={staff}>
+                      {staff}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end", gap: "0.75rem", marginTop: "0.5rem" }}>

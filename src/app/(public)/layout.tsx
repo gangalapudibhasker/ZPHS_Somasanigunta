@@ -174,7 +174,10 @@ export default async function PublicLayout({
                   <Phone size={16} style={{ color: "#10b981" }} /> +91 85550 79452
                 </span>
                 <span className="flex items-center gap-2">
-                  <Mail size={16} style={{ color: "#10b981" }} /> info.zphssomasanigunta@gmail.com
+                  <Mail size={16} style={{ color: "#10b981" }} />
+                  <a href="mailto:zphs.somasanigunta@gmail.com" style={{ color: "inherit", textDecoration: "none" }}>
+                    info: zphs.somasanigunta@gmail.com
+                  </a>
                 </span>
               </div>
             </div>
@@ -209,25 +212,50 @@ export default async function PublicLayout({
             {/* Column 3: Government Links */}
             <div className="flex flex-col gap-4">
               <h3 style={{ color: "white", fontSize: "1.2rem", fontWeight: "700" }}>Government Portals</h3>
-              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "0.75rem", fontSize: "0.95rem" }}>
+              <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: "0.65rem", fontSize: "0.88rem", padding: 0, margin: 0 }}>
                 <li>
-                  <a href="https://studentinfo.ap.gov.in" target="_blank" rel="noopener noreferrer" className="footer-link-gray">
-                    AP Student Info Portal
+                  <a href="https://www.bse.ap.gov.in/" target="_blank" rel="noopener noreferrer" className="footer-link-gray">
+                    Board Of Secondary Education Andhra Pradesh
+                  </a>
+                </li>
+                <li>
+                  <a href="https://udiseplus.gov.in/#/en/home" target="_blank" rel="noopener noreferrer" className="footer-link-gray">
+                    UDISE+
+                  </a>
+                </li>
+                <li>
+                  <a href="https://pmposhan.ap.gov.in/MDM/HomeLatest.aspx" target="_blank" rel="noopener noreferrer" className="footer-link-gray">
+                    Home Page (PM POSHAN - MDM)
+                  </a>
+                </li>
+                <li>
+                  <a href="https://scm.ap.gov.in/scm/DispMDMSchoolPR" target="_blank" rel="noopener noreferrer" className="footer-link-gray">
+                    IAeSCM - Andhra Pradesh
+                  </a>
+                </li>
+                <li>
+                  <a href="https://schoolinfra.ap.gov.in/StudentKits/" target="_blank" rel="noopener noreferrer" className="footer-link-gray">
+                    Sarvepalli Radhakrishnan Vidyarthi Mitra
+                  </a>
+                </li>
+                <li>
+                  <a href="https://apopenschool.ap.gov.in/OfficeAdd.aspx" target="_blank" rel="noopener noreferrer" className="footer-link-gray">
+                    ANDHRA PRADESH OPEN SCHOOL SOCIETY
+                  </a>
+                </li>
+                <li>
+                  <a href="https://ncert.nic.in/" target="_blank" rel="noopener noreferrer" className="footer-link-gray">
+                    NCERT
+                  </a>
+                </li>
+                <li>
+                  <a href="https://schoolinfra.ap.gov.in/stmsworks/" target="_blank" rel="noopener noreferrer" className="footer-link-gray">
+                    Mana Badi Mana Bhavishyathu
                   </a>
                 </li>
                 <li>
                   <a href="https://cse.ap.gov.in" target="_blank" rel="noopener noreferrer" className="footer-link-gray">
                     Commissioner of School Education, AP
-                  </a>
-                </li>
-                <li>
-                  <a href="https://schooledu.ap.gov.in" target="_blank" rel="noopener noreferrer" className="footer-link-gray">
-                    DOKKA SEETHAMMA MADHYAHANA BADI BHOJANAM(MDM)
-                  </a>
-                </li>
-                <li>
-                  <a href="https://schooledu.ap.gov.in" target="_blank" rel="noopener noreferrer" className="footer-link-gray">
-                    AP School Education Department
                   </a>
                 </li>
               </ul>

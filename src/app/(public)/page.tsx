@@ -454,7 +454,10 @@ export default async function HomePage() {
                     <Phone size={18} style={{ color: "#10b981", flexShrink: 0 }} /> +91 85550 79452 (HM Office)
                   </span>
                   <span className="flex items-center gap-2">
-                    <Mail size={18} style={{ color: "#3b82f6", flexShrink: 0 }} /> info.zphssomasanigunta@gmail.com
+                    <Mail size={18} style={{ color: "#3b82f6", flexShrink: 0 }} /> 
+                    <a href="mailto:zphs.somasanigunta@gmail.com" style={{ color: "inherit", textDecoration: "none" }}>
+                      info: zphs.somasanigunta@gmail.com
+                    </a>
                   </span>
                 </div>
               </div>

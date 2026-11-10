@@ -43,14 +43,10 @@ export async function GET(request: Request) {
   }
 }
 
-// POST: Add new office file link with auto-versioning
+// POST: Add new office file link (allows teachers and staff to upload school files)
 export async function POST(request: Request) {
   try {
     const admin = await getAdminUser();
-    if (!admin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const data = await request.json();
 
     if (!data.originalName || !data.filePath || !data.category) {
@@ -58,24 +54,40 @@ export async function POST(request: Request) {
     }
 
     // Determine version history: find highest version of file with same originalName + category
-    const matches = await prisma.officeFile.findMany({
-      where: {
-        originalName: data.originalName,
-        category: data.category,
-      },
-      orderBy: { version: "desc" },
-      take: 1,
-    });
-
-    const nextVersion = matches.length > 0 ? matches[0].version + 1 : 1;
+    let nextVersion = 1;
+    try {
+      const matches = await prisma.officeFile.findMany({
+        where: {
+          originalName: data.originalName,
+          category: data.category,
+        },
+        orderBy: { version: "desc" },
+        take: 1,
+      });
+      nextVersion = matches.length > 0 ? (matches[0].version || 1) + 1 : 1;
+    } catch {
+      nextVersion = 1;
+    }
 
     // Detect file type
+    const lowerName = data.originalName.toLowerCase();
     let fileType = "PDF";
-    if (data.originalName.endsWith(".docx") || data.originalName.endsWith(".doc")) {
+    if (lowerName.endsWith(".docx") || lowerName.endsWith(".doc")) {
       fileType = "WORD";
-    } else if (data.originalName.endsWith(".xlsx") || data.originalName.endsWith(".xls")) {
+    } else if (lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls") || lowerName.endsWith(".csv")) {
       fileType = "EXCEL";
+    } else if (lowerName.endsWith(".pptx") || lowerName.endsWith(".ppt")) {
+      fileType = "PPT";
+    } else if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") || lowerName.endsWith(".png") || lowerName.endsWith(".webp") || lowerName.endsWith(".svg")) {
+      fileType = "IMAGE";
+    } else if (lowerName.endsWith(".txt") || lowerName.endsWith(".rtf")) {
+      fileType = "DOCUMENT";
     }
+
+    const uploadedBy =
+      data.uploadedBy && data.uploadedBy.trim().length > 0
+        ? data.uploadedBy.trim()
+        : admin?.name || "Teacher / Faculty";
 
     const newFileRecord = await prisma.officeFile.create({
       data: {
@@ -85,7 +97,7 @@ export async function POST(request: Request) {
         fileType,
         category: data.category,
         version: nextVersion,
-        uploadedBy: admin.name || "Headmaster",
+        uploadedBy,
       },
     });
 
@@ -96,12 +108,15 @@ export async function POST(request: Request) {
   }
 }
 
-// DELETE: Delete office file record
+// DELETE: Delete office file record - ONLY FOR ADMIN
 export async function DELETE(request: Request) {
   try {
     const admin = await getAdminUser();
-    if (!admin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!admin || (admin.role !== "ADMIN" && admin.role !== "HEADMASTER" && admin.username !== "admin")) {
+      return NextResponse.json(
+        { error: "Forbidden: Deleting files is strictly restricted to School Administrator." },
+        { status: 403 }
+      );
     }
 
     const { searchParams } = new URL(request.url);
@@ -111,10 +126,10 @@ export async function DELETE(request: Request) {
     }
 
     await prisma.officeFile.delete({
-      where: { id: parseInt(idParam) },
+      where: { id: parseInt(idParam, 10) },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: "File deleted successfully" });
   } catch (error: any) {
     console.error("DELETE File Error:", error);
     return NextResponse.json({ error: error.message || "Failed to remove file record" }, { status: 500 });

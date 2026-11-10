@@ -201,6 +201,9 @@ function createModelProxy(modelName: string, rawDelegate: any) {
               return await origMethod.call(target, args);
             }
           } catch {}
+          const list = getFallbackList();
+          const idx = list.findIndex((item) => matchesWhere(item, args?.where));
+          if (idx >= 0) list.splice(idx, 1);
           return { count: 1 };
         };
       }

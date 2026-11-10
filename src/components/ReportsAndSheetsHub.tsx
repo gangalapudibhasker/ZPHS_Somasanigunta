@@ -1,7 +1,24 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FileSpreadsheet, BarChart3, Printer, RefreshCw, Download, ExternalLink } from "lucide-react";
+import {
+  FileSpreadsheet,
+  BarChart3,
+  Printer,
+  RefreshCw,
+  Download,
+  ExternalLink,
+  Upload,
+  Trash2,
+  FileText,
+  Search,
+  Lock,
+  Plus,
+  CheckCircle2,
+  AlertCircle,
+  File,
+  Image as ImageIcon,
+} from "lucide-react";
 import * as XLSX from "xlsx";
 
 const LIVE_GOOGLE_SHEET_URL =
@@ -15,7 +32,57 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
   const [syncStatus, setSyncStatus] = useState("");
   const [syncing, setSyncing] = useState(false);
 
+  // File Upload & Admin Management States
+  const [isAdminUser, setIsAdminUser] = useState<boolean>(isAdmin);
+  const [files, setFiles] = useState<any[]>([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [fileToUpload, setFileToUpload] = useState<File | null>(null);
+  const [fileTitle, setFileTitle] = useState("");
+  const [fileCategory, setFileCategory] = useState("ACADEMIC");
+  const [teacherName, setTeacherName] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [fileSearch, setFileSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const fetchFiles = async () => {
+    setLoadingFiles(true);
+    try {
+      const res = await fetch("/api/files");
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setFiles(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch office files:", e);
+    } finally {
+      setLoadingFiles(false);
+    }
+  };
+
   useEffect(() => {
+    // Check if user is logged in as admin
+    if (!isAdmin) {
+      fetch("/api/auth/user")
+        .then((r) => r.json())
+        .then((data) => {
+          if (
+            data.authenticated &&
+            (data.user?.role === "ADMIN" ||
+              data.user?.role === "HEADMASTER" ||
+              data.user?.username === "admin")
+          ) {
+            setIsAdminUser(true);
+          }
+        })
+        .catch(() => {});
+    } else {
+      setIsAdminUser(true);
+    }
+
     Promise.all([
       fetch("/api/students").then((r) => r.json()).catch(() => []),
       fetch("/api/school-hub").then((r) => r.json()).catch(() => ({})),
@@ -30,7 +97,97 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
         setLastSynced(hub.googleSheetsConfig.lastSynced || hub.googleSheetsConfig.lastSyncedAt || "Connected");
       }
     });
-  }, []);
+
+    fetchFiles();
+  }, [isAdmin]);
+
+  // Handle teacher upload of school documents
+  const handleTeacherFileUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fileToUpload) {
+      setUploadMessage({ type: "error", text: "Please select a file to upload." });
+      return;
+    }
+
+    setUploading(true);
+    setUploadMessage(null);
+
+    try {
+      // 1. Upload binary file
+      const formData = new FormData();
+      formData.append("file", fileToUpload);
+
+      const upRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const upData = await upRes.json();
+      if (!upRes.ok || !upData.url) {
+        throw new Error(upData.error || "Failed to upload file to server.");
+      }
+
+      // 2. Register metadata in files database
+      const originalName = fileTitle.trim() || upData.originalName || fileToUpload.name;
+      const fileRecordRes = await fetch("/api/files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          originalName,
+          filename: upData.filename || fileToUpload.name,
+          filePath: upData.url,
+          category: fileCategory,
+          uploadedBy: teacherName.trim() || "School Teacher / Faculty",
+        }),
+      });
+
+      const recordData = await fileRecordRes.json();
+      if (!fileRecordRes.ok) {
+        throw new Error(recordData.error || "Failed to save file record in database.");
+      }
+
+      // 3. Reset form and refresh list
+      setFileToUpload(null);
+      setFileTitle("");
+      setTeacherName("");
+      setUploadMessage({
+        type: "success",
+        text: `"${originalName}" has been successfully uploaded and added to the School Repository!`,
+      });
+      fetchFiles();
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      setUploadMessage({
+        type: "error",
+        text: err.message || "An error occurred while uploading. Please try again.",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Handle file deletion (STRICTLY restricted to Admin)
+  const handleDeleteFile = async (id: number) => {
+    if (!isAdminUser) {
+      alert("Unauthorized: Delete option is strictly restricted to School Administrator.");
+      return;
+    }
+
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/files?id=${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to delete file.");
+      }
+      setConfirmDeleteId(null);
+      fetchFiles();
+    } catch (err: any) {
+      alert(err.message || "Failed to delete file.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const exportTotalMasterWorkbook = () => {
     const wb = XLSX.utils.book_new();
@@ -219,6 +376,18 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
               </button>
             </>
           )}
+          <button
+            type="button"
+            onClick={() => {
+              setShowUploadForm(true);
+              const el = document.getElementById("school-files-section");
+              if (el) el.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="btn btn-primary"
+            style={{ fontSize: "0.85rem", backgroundColor: "#2563eb" }}
+          >
+            <Upload size={15} /> Upload School Files
+          </button>
           <button
             type="button"
             onClick={exportTotalMasterWorkbook}
@@ -488,6 +657,533 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Table 4: School Related Files & Documents Repository */}
+      <div id="school-files-section" className="card" style={{ padding: "1.5rem" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "1rem",
+            flexWrap: "wrap",
+            gap: "0.75rem",
+          }}
+        >
+          <div>
+            <h2
+              style={{
+                fontSize: "1.2rem",
+                fontWeight: 800,
+                color: "#0f172a",
+                margin: 0,
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <FileText size={20} style={{ color: "#1e3a8a" }} />
+              4. School Related Files &amp; Documents Repository
+            </h2>
+            <p style={{ fontSize: "0.85rem", color: "#64748b", margin: "4px 0 0 0" }}>
+              Teachers and staff can upload official school files (lesson plans, question papers, circulars, registers).
+              <span style={{ color: "#b91c1c", fontWeight: 700, marginLeft: "6px" }}>
+                * Deletion is restricted strictly to School Administrator.
+              </span>
+            </p>
+          </div>
+
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <span className="badge badge-primary">{files.length} Documents</span>
+            <button
+              type="button"
+              onClick={() => {
+                setShowUploadForm(!showUploadForm);
+                setUploadMessage(null);
+              }}
+              className="btn btn-primary"
+              style={{
+                fontSize: "0.85rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                backgroundColor: showUploadForm ? "#475569" : "#1e3a8a",
+              }}
+            >
+              <Plus size={16} />
+              {showUploadForm ? "Close Form" : "Upload School File"}
+            </button>
+          </div>
+        </div>
+
+        {/* Teacher Upload Form Modal/Collapsible Box */}
+        {showUploadForm && (
+          <div
+            style={{
+              backgroundColor: "#f8fafc",
+              border: "1.5px solid #bfdbfe",
+              borderRadius: "8px",
+              padding: "1.25rem",
+              marginBottom: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+              <h3 style={{ fontSize: "1rem", fontWeight: 800, color: "#1e3a8a", margin: 0, display: "flex", alignItems: "center", gap: "6px" }}>
+                <Upload size={17} /> Teacher / Staff File Upload Form
+              </h3>
+              <span style={{ fontSize: "0.8rem", color: "#64748b" }}>
+                Accepted formats: PDF, Word, Excel, PPT, Text, Images (up to 25MB)
+              </span>
+            </div>
+
+            <form onSubmit={handleTeacherFileUpload} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>
+                  Select File *
+                </label>
+                <input
+                  type="file"
+                  required
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.rtf,.jpg,.jpeg,.png,.webp"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] || null;
+                    setFileToUpload(f);
+                    if (f && !fileTitle) {
+                      const nameWithoutExt = f.name.replace(/\.[^/.]+$/, "");
+                      setFileTitle(nameWithoutExt);
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "7px 10px",
+                    borderRadius: "6px",
+                    border: "1.5px solid #cbd5e1",
+                    backgroundColor: "#fff",
+                    fontSize: "0.85rem",
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>
+                  Document Title / Description *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Class 10 Science Term 1 Question Paper"
+                  value={fileTitle}
+                  onChange={(e) => setFileTitle(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "7px 10px",
+                    borderRadius: "6px",
+                    border: "1.5px solid #cbd5e1",
+                    backgroundColor: "#fff",
+                    fontSize: "0.88rem",
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>
+                  Category *
+                </label>
+                <select
+                  value={fileCategory}
+                  onChange={(e) => setFileCategory(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "7px 10px",
+                    borderRadius: "6px",
+                    border: "1.5px solid #cbd5e1",
+                    backgroundColor: "#fff",
+                    fontSize: "0.88rem",
+                  }}
+                >
+                  <option value="ACADEMIC">Academic (Lesson Plans, Syllabus, Question Papers)</option>
+                  <option value="ADMINISTRATIVE">Administrative (Circulars, Minutes, Staff Orders)</option>
+                  <option value="STUDENT">Student Welfare &amp; Registers (JVK, Attendance)</option>
+                  <option value="GOV_SCHEME">Government Schemes (MDM Guidelines, Amma Vodi)</option>
+                  <option value="GENERAL">General School Files &amp; Notices</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#334155", marginBottom: "4px" }}>
+                  Uploaded By (Teacher / Staff Name) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  list="staff-names-list"
+                  placeholder="e.g. Smt. K. Vani / Sri P. Ramanaiah"
+                  value={teacherName}
+                  onChange={(e) => setTeacherName(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "7px 10px",
+                    borderRadius: "6px",
+                    border: "1.5px solid #cbd5e1",
+                    backgroundColor: "#fff",
+                    fontSize: "0.88rem",
+                  }}
+                />
+                <datalist id="staff-names-list">
+                  <option value="Sri Gangalapudi Bhaskar Reddy (Headmaster)" />
+                  <option value="Smt. K. Vani (Physical Science)" />
+                  <option value="Sri P. Ramanaiah (Mathematics)" />
+                  <option value="School Faculty / Staff Member" />
+                </datalist>
+              </div>
+
+              <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end", gap: "0.75rem", marginTop: "0.5rem" }}>
+                <button
+                  type="button"
+                  onClick={() => setShowUploadForm(false)}
+                  className="btn btn-secondary"
+                  style={{ fontSize: "0.85rem" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={uploading}
+                  className="btn btn-primary"
+                  style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "6px" }}
+                >
+                  <Upload size={15} />
+                  {uploading ? "Uploading Document..." : "Upload File"}
+                </button>
+              </div>
+            </form>
+
+            {uploadMessage && (
+              <div
+                style={{
+                  marginTop: "1rem",
+                  padding: "0.75rem 1rem",
+                  borderRadius: "6px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  fontSize: "0.88rem",
+                  fontWeight: 600,
+                  backgroundColor: uploadMessage.type === "success" ? "#dcfce7" : "#fee2e2",
+                  color: uploadMessage.type === "success" ? "#15803d" : "#b91c1c",
+                  border: uploadMessage.type === "success" ? "1px solid #86efac" : "1px solid #fca5a5",
+                }}
+              >
+                {uploadMessage.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                {uploadMessage.text}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Filter and Search Bar */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "0.75rem",
+            marginBottom: "1rem",
+            backgroundColor: "#f8fafc",
+            padding: "0.75rem 1rem",
+            borderRadius: "6px",
+            border: "1px solid #e2e8f0",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: "1 1 280px" }}>
+            <Search size={16} style={{ color: "#64748b" }} />
+            <input
+              type="text"
+              placeholder="Search files by title, category, or teacher name..."
+              value={fileSearch}
+              onChange={(e) => setFileSearch(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "6px 10px",
+                border: "1px solid #cbd5e1",
+                borderRadius: "4px",
+                fontSize: "0.85rem",
+              }}
+            />
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 700 }}>Category:</span>
+            {["ALL", "ACADEMIC", "ADMINISTRATIVE", "STUDENT", "GOV_SCHEME"].map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategoryFilter(cat)}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: "15px",
+                  fontSize: "0.78rem",
+                  fontWeight: categoryFilter === cat ? 800 : 600,
+                  border: "none",
+                  cursor: "pointer",
+                  backgroundColor: categoryFilter === cat ? "#1e3a8a" : "#e2e8f0",
+                  color: categoryFilter === cat ? "#ffffff" : "#475569",
+                }}
+              >
+                {cat === "ALL" ? "All Files" : cat === "GOV_SCHEME" ? "Gov Schemes" : cat === "STUDENT" ? "Student Welfare" : cat.charAt(0) + cat.slice(1).toLowerCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Files Table */}
+        <div style={{ overflowX: "auto" }}>
+          {loadingFiles ? (
+            <div style={{ padding: "2rem", textAlign: "center", color: "#64748b", fontSize: "0.9rem" }}>
+              Loading school files catalog...
+            </div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={{ ...thStyle, width: "50px", textAlign: "center" }}>#</th>
+                  <th style={thStyle}>Document Name &amp; Details</th>
+                  <th style={{ ...thStyle, textAlign: "center" }}>Category</th>
+                  <th style={{ ...thStyle, textAlign: "center", width: "70px" }}>Version</th>
+                  <th style={thStyle}>Uploaded By</th>
+                  <th style={{ ...thStyle, textAlign: "center" }}>Date</th>
+                  <th style={{ ...thStyle, textAlign: "center", width: "180px" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {files
+                  .filter((f) => {
+                    const matchesCat = categoryFilter === "ALL" || f.category === categoryFilter;
+                    const q = fileSearch.toLowerCase().trim();
+                    const matchesSearch =
+                      !q ||
+                      (f.originalName && f.originalName.toLowerCase().includes(q)) ||
+                      (f.filename && f.filename.toLowerCase().includes(q)) ||
+                      (f.uploadedBy && f.uploadedBy.toLowerCase().includes(q)) ||
+                      (f.category && f.category.toLowerCase().includes(q));
+                    return matchesCat && matchesSearch;
+                  })
+                  .map((file, idx) => {
+                    const uploadDateStr = file.uploadDate
+                      ? new Date(file.uploadDate).toLocaleDateString("en-IN", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })
+                      : "Recent";
+
+                    const isPdf = file.fileType === "PDF" || file.originalName?.toLowerCase().endsWith(".pdf");
+                    const isWord = file.fileType === "WORD" || file.originalName?.toLowerCase().endsWith(".doc") || file.originalName?.toLowerCase().endsWith(".docx");
+                    const isExcel = file.fileType === "EXCEL" || file.originalName?.toLowerCase().endsWith(".xls") || file.originalName?.toLowerCase().endsWith(".xlsx") || file.originalName?.toLowerCase().endsWith(".csv");
+                    const isImage = file.fileType === "IMAGE";
+
+                    return (
+                      <tr key={file.id || idx} style={{ borderBottom: "1px solid #e2e8f0" }}>
+                        <td style={{ ...tdStyle, textAlign: "center", fontWeight: 700, color: "#64748b" }}>
+                          {idx + 1}
+                        </td>
+                        <td style={tdStyle}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            {isPdf && (
+                              <span style={{ padding: "3px 6px", borderRadius: "4px", backgroundColor: "#fee2e2", color: "#b91c1c", fontSize: "0.72rem", fontWeight: 800 }}>
+                                <FileText size={12} style={{ display: "inline", marginRight: "3px" }} /> PDF
+                              </span>
+                            )}
+                            {isWord && (
+                              <span style={{ padding: "3px 6px", borderRadius: "4px", backgroundColor: "#dbeafe", color: "#1d4ed8", fontSize: "0.72rem", fontWeight: 800 }}>
+                                <FileText size={12} style={{ display: "inline", marginRight: "3px" }} /> DOC
+                              </span>
+                            )}
+                            {isExcel && (
+                              <span style={{ padding: "3px 6px", borderRadius: "4px", backgroundColor: "#dcfce7", color: "#15803d", fontSize: "0.72rem", fontWeight: 800 }}>
+                                <FileSpreadsheet size={12} style={{ display: "inline", marginRight: "3px" }} /> XLS
+                              </span>
+                            )}
+                            {isImage && (
+                              <span style={{ padding: "3px 6px", borderRadius: "4px", backgroundColor: "#f3e8ff", color: "#7e22ce", fontSize: "0.72rem", fontWeight: 800 }}>
+                                <ImageIcon size={12} style={{ display: "inline", marginRight: "3px" }} /> IMG
+                              </span>
+                            )}
+                            <div>
+                              <div style={{ fontWeight: 700, color: "#0f172a" }}>{file.originalName}</div>
+                              {file.filename && file.filename !== file.originalName && (
+                                <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>{file.filename}</div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ ...tdStyle, textAlign: "center" }}>
+                          <span
+                            style={{
+                              padding: "3px 8px",
+                              borderRadius: "12px",
+                              fontSize: "0.75rem",
+                              fontWeight: 700,
+                              backgroundColor:
+                                file.category === "ACADEMIC"
+                                  ? "#e0e7ff"
+                                  : file.category === "ADMINISTRATIVE"
+                                  ? "#e2e8f0"
+                                  : file.category === "STUDENT"
+                                  ? "#d1fae5"
+                                  : file.category === "GOV_SCHEME"
+                                  ? "#fef3c7"
+                                  : "#f1f5f9",
+                              color:
+                                file.category === "ACADEMIC"
+                                  ? "#3730a3"
+                                  : file.category === "ADMINISTRATIVE"
+                                  ? "#1e293b"
+                                  : file.category === "STUDENT"
+                                  ? "#065f46"
+                                  : file.category === "GOV_SCHEME"
+                                  ? "#92400e"
+                                  : "#475569",
+                            }}
+                          >
+                            {file.category === "GOV_SCHEME"
+                              ? "Gov Scheme"
+                              : file.category === "STUDENT"
+                              ? "Student Welfare"
+                              : file.category?.charAt(0) + file.category?.slice(1).toLowerCase()}
+                          </span>
+                        </td>
+                        <td style={{ ...tdStyle, textAlign: "center", fontWeight: 700, color: "#475569" }}>
+                          v{file.version || 1}.0
+                        </td>
+                        <td style={{ ...tdStyle, fontWeight: 600, color: "#1e3a8a" }}>
+                          {file.uploadedBy || "Teacher / Faculty"}
+                        </td>
+                        <td style={{ ...tdStyle, textAlign: "center", fontSize: "0.85rem", color: "#64748b" }}>
+                          {uploadDateStr}
+                        </td>
+                        <td style={{ ...tdStyle, textAlign: "center" }}>
+                          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                            <a
+                              href={file.filePath}
+                              target="_blank"
+                              rel="noreferrer"
+                              download={file.originalName}
+                              style={{
+                                padding: "4px 8px",
+                                backgroundColor: "#1e3a8a",
+                                color: "#ffffff",
+                                borderRadius: "4px",
+                                textDecoration: "none",
+                                fontSize: "0.78rem",
+                                fontWeight: 600,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "4px",
+                              }}
+                            >
+                              <Download size={13} /> View
+                            </a>
+
+                            {/* DELETE OPTION: STRICTLY DISPLAYED FOR ADMIN ONLY */}
+                            {isAdminUser ? (
+                              confirmDeleteId === file.id ? (
+                                <div style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                  <button
+                                    type="button"
+                                    disabled={deletingId === file.id}
+                                    onClick={() => handleDeleteFile(file.id)}
+                                    style={{
+                                      padding: "4px 8px",
+                                      backgroundColor: "#dc2626",
+                                      color: "#fff",
+                                      border: "none",
+                                      borderRadius: "4px",
+                                      fontSize: "0.75rem",
+                                      fontWeight: 700,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    {deletingId === file.id ? "..." : "Confirm"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setConfirmDeleteId(null)}
+                                    style={{
+                                      padding: "4px 8px",
+                                      backgroundColor: "#e2e8f0",
+                                      color: "#334155",
+                                      border: "none",
+                                      borderRadius: "4px",
+                                      fontSize: "0.75rem",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    No
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmDeleteId(file.id)}
+                                  title="Delete document record (Admin Only)"
+                                  style={{
+                                    padding: "4px 8px",
+                                    backgroundColor: "#fee2e2",
+                                    color: "#dc2626",
+                                    border: "1px solid #fecaca",
+                                    borderRadius: "4px",
+                                    fontSize: "0.78rem",
+                                    fontWeight: 600,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  <Trash2 size={13} /> Delete
+                                </button>
+                              )
+                            ) : (
+                              <span
+                                style={{
+                                  fontSize: "0.72rem",
+                                  color: "#94a3b8",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "3px",
+                                  padding: "3px 6px",
+                                }}
+                                title="Only School Administrator has permission to delete official files"
+                              >
+                                <Lock size={12} /> Admin Only
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                {files.length === 0 && (
+                  <tr>
+                    <td colSpan={7} style={{ ...tdStyle, textAlign: "center", padding: "2rem", color: "#64748b" }}>
+                      No school files have been uploaded yet. Teachers can use the "Upload School File" button above to add documents.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <div style={{ marginTop: "1rem", fontSize: "0.8rem", color: "#64748b", display: "flex", alignItems: "center", gap: "6px" }}>
+          <Lock size={13} style={{ color: "#b91c1c" }} />
+          <span>
+            <strong>Access Policy:</strong> All teachers and faculty are authorized to upload school documents, circulars, and lesson plans. Permanent deletion is restricted to School Administrator.
+          </span>
         </div>
       </div>
     </div>

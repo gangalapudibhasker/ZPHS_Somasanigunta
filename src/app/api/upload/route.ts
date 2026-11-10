@@ -26,13 +26,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Allow image uploads for student activities; require auth for non-image files
-    const isImage = file.type.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
-    if (!isImage) {
-      const authorized = await isAuthorized();
-      if (!authorized) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
+    // Allow safe document formats (PDF, Word, Excel, PPT, Text, Images) for school files & student activities
+    const allowedExtensions = /\.(pdf|docx?|xlsx?|csv|pptx?|txt|rtf|jpe?g|png|webp|svg)$/i;
+    const isAllowedFormat = allowedExtensions.test(file.name) || file.type.startsWith("image/") || file.type.startsWith("application/pdf");
+    
+    if (!isAllowedFormat) {
+      return NextResponse.json(
+        { error: "Unsupported file type. Please upload PDF, Word, Excel, PowerPoint, Text, or Image files." },
+        { status: 400 }
+      );
     }
 
     const bytes = await file.arrayBuffer();
@@ -40,15 +42,12 @@ export async function POST(request: Request) {
 
     // 3. Create target directory if it doesn't exist
     const uploadDir = path.join(process.cwd(), "public", "uploads");
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
+    
     // 4. Generate a unique name
     const originalName = file.name;
-    const extension = path.extname(originalName);
+    const extension = path.extname(originalName) || ".pdf";
     const baseName = path.basename(originalName, extension)
-      .replace(/[^a-zA-Z0-9]/g, "_")
+      .replace(/[^a-zA-Z0-9_-]/g, "_")
       .toLowerCase();
     
     const uniqueFilename = `${baseName}_${Date.now()}_${Math.random()
@@ -57,12 +56,21 @@ export async function POST(request: Request) {
     
     const filePath = path.join(uploadDir, uniqueFilename);
 
-    // 5. Write to local disk
-    fs.writeFileSync(filePath, buffer);
-    console.log(`Uploaded file saved to: ${filePath}`);
+    // 5. Write to local disk, or fallback to Data URL if running in serverless read-only filesystem
+    let fileUrl = `/uploads/${uniqueFilename}`;
+    try {
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      fs.writeFileSync(filePath, buffer);
+      console.log(`Uploaded file saved to: ${filePath}`);
+    } catch (fsErr) {
+      console.warn("Could not write to public/uploads, using base64 fallback:", fsErr);
+      const mime = file.type || "application/octet-stream";
+      fileUrl = `data:${mime};base64,${buffer.toString("base64")}`;
+    }
 
-    // 6. Return relative URL path
-    const fileUrl = `/uploads/${uniqueFilename}`;
+    // 6. Return relative URL path or data URL
     return NextResponse.json({ 
       success: true, 
       url: fileUrl,

@@ -5065,7 +5065,52 @@
       "createdAt": "2026-10-29T14:55:32.519Z"
     }
   ],
-  "officeFiles": [],
+  "officeFiles": [
+    {
+      "id": 1,
+      "filename": "zphs_academic_calendar_2025_26.pdf",
+      "originalName": "ZPHS Annual Academic Calendar 2025-26.pdf",
+      "filePath": "/uploads/zphs_academic_calendar_2025_26.pdf",
+      "fileType": "PDF",
+      "category": "ACADEMIC",
+      "uploadDate": "2026-11-10T16:03:07.335Z",
+      "version": 1,
+      "uploadedBy": "Sri Gangalapudi Bhaskar Reddy (Headmaster)"
+    },
+    {
+      "id": 2,
+      "filename": "mdm_guidelines_2025_26.pdf",
+      "originalName": "MDM Nutritional Diet Menu and Guidelines.pdf",
+      "filePath": "/uploads/mdm_guidelines_2025_26.pdf",
+      "fileType": "PDF",
+      "category": "GOV_SCHEME",
+      "uploadDate": "2026-11-10T16:03:07.357Z",
+      "version": 1,
+      "uploadedBy": "Sri Gangalapudi Bhaskar Reddy (Headmaster)"
+    },
+    {
+      "id": 3,
+      "filename": "ssc_blueprint_2025_26.pdf",
+      "originalName": "SSC Public Exams Blueprint and Model Question Papers.pdf",
+      "filePath": "/uploads/ssc_blueprint_2025_26.pdf",
+      "fileType": "PDF",
+      "category": "ACADEMIC",
+      "uploadDate": "2026-11-10T16:03:07.380Z",
+      "version": 1,
+      "uploadedBy": "Sri P. Ramanaiah (Mathematics)"
+    },
+    {
+      "id": 4,
+      "filename": "jvk_register_2025_26.xlsx",
+      "originalName": "JVK Student Kits and Textbooks Distribution Register.xlsx",
+      "filePath": "/uploads/jvk_register_2025_26.xlsx",
+      "fileType": "EXCEL",
+      "category": "STUDENT",
+      "uploadDate": "2026-11-10T16:03:07.407Z",
+      "version": 1,
+      "uploadedBy": "Smt. K. Vani (Physical Science)"
+    }
+  ],
   "nominalRolls": [
     {
       "id": 9,

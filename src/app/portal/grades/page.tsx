@@ -38,6 +38,7 @@ export default async function GradesPage() {
     const s = studentMap.get(r.admissionNo);
     return {
       ...r,
+      teacherRemarks: r.teacherRemarks || "",
       studentName: s?.name || "Student",
       studentPhoto: s?.photo || "/images/placeholders/student_male.svg",
       rollNo: s?.rollNo || "",

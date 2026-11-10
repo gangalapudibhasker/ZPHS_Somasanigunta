@@ -36,6 +36,7 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   // 1. Server-side session verification
+  let adminUser: any = null;
   if (process.env.GITHUB_PAGES !== "true") {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get("zphs_session");
@@ -48,6 +49,7 @@ export default async function AdminLayout({
     if (!admin) {
       redirect("/login");
     }
+    adminUser = admin;
   }
 
   const sidebarLinks = [
@@ -123,8 +125,8 @@ export default async function AdminLayout({
 
         {/* Footer actions / Admin details */}
         <div style={{ padding: "1rem 1.25rem", borderTop: "1px solid #1e293b" }}>
-          <div style={{ fontSize: "0.8rem", color: "white", fontWeight: "bold" }}>{admin.name}</div>
-          <div style={{ fontSize: "0.75rem", color: "#64748b", textTransform: "capitalize", marginBottom: "0.75rem" }}>{admin.role.toLowerCase()}</div>
+          <div style={{ fontSize: "0.8rem", color: "white", fontWeight: "bold" }}>{adminUser?.name || "Administrator"}</div>
+          <div style={{ fontSize: "0.75rem", color: "#64748b", textTransform: "capitalize", marginBottom: "0.75rem" }}>{(adminUser?.role || "Admin").toLowerCase()}</div>
           <AdminNavbar />
         </div>
       </aside>

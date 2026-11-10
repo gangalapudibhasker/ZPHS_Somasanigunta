@@ -86,7 +86,161 @@ export default async function HomePage() {
       {/* 1. Hero Image Slider */}
       <HeroSlider />
 
-      {/* 2. School Statistics Dashboard Widget */}
+      {/* 2. State Leadership (Government of Andhra Pradesh Dignitaries) */}
+      <section
+        style={{
+          padding: "2rem 0",
+          backgroundColor: "#ffffff",
+          borderBottom: "1px solid #e2e8f0",
+          background: "linear-gradient(180deg, #fffaf5 0%, #ffffff 100%)",
+        }}
+      >
+        <div className="container">
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: "1.5rem",
+              maxWidth: "960px",
+              margin: "0 auto",
+            }}
+          >
+            {/* Card 1: Hon'ble Chief Minister */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "1.25rem",
+                padding: "1rem 1.25rem",
+                borderRadius: "12px",
+                border: "2px solid #ea580c",
+                backgroundColor: "#ffffff",
+                boxShadow: "0 4px 12px rgba(234, 88, 12, 0.08)",
+              }}
+            >
+              <div
+                style={{
+                  width: "115px",
+                  height: "115px",
+                  borderRadius: "8px",
+                  overflow: "hidden",
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#fff",
+                }}
+              >
+                <img
+                  src="/images/leadership/cm_chandrababu_naidu.png"
+                  alt="Sri N. Chandrababu Naidu - Hon'ble Chief Minister"
+                  style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                <div
+                  style={{
+                    fontSize: "1.15rem",
+                    fontWeight: 800,
+                    color: "#ea580c",
+                    lineHeight: "1.25",
+                  }}
+                >
+                  Sri N. Chandrababu Naidu
+                </div>
+                <div
+                  style={{
+                    fontSize: "0.95rem",
+                    fontWeight: 700,
+                    color: "#ea580c",
+                    lineHeight: "1.3",
+                  }}
+                >
+                  Hon'ble Chief Minister
+                </div>
+                <div
+                  style={{
+                    fontSize: "0.88rem",
+                    fontWeight: 700,
+                    color: "#ea580c",
+                    lineHeight: "1.3",
+                  }}
+                >
+                  Govt. of Andhra Pradesh
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Hon'ble Minister for Human Resource Development */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "1.25rem",
+                padding: "1rem 1.25rem",
+                borderRadius: "12px",
+                border: "2px solid #ea580c",
+                backgroundColor: "#ffffff",
+                boxShadow: "0 4px 12px rgba(234, 88, 12, 0.08)",
+              }}
+            >
+              <div
+                style={{
+                  width: "115px",
+                  height: "115px",
+                  borderRadius: "8px",
+                  overflow: "hidden",
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#fff",
+                }}
+              >
+                <img
+                  src="/images/leadership/minister_nara_lokesh.png"
+                  alt="Sri Nara Lokesh - Hon'ble Minister for Human Resource Development"
+                  style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                <div
+                  style={{
+                    fontSize: "1.15rem",
+                    fontWeight: 800,
+                    color: "#ea580c",
+                    lineHeight: "1.25",
+                  }}
+                >
+                  Sri Nara Lokesh
+                </div>
+                <div
+                  style={{
+                    fontSize: "0.95rem",
+                    fontWeight: 700,
+                    color: "#ea580c",
+                    lineHeight: "1.3",
+                  }}
+                >
+                  Hon'ble Minister for Human Resource Development
+                </div>
+                <div
+                  style={{
+                    fontSize: "0.88rem",
+                    fontWeight: 700,
+                    color: "#ea580c",
+                    lineHeight: "1.3",
+                  }}
+                >
+                  Government of Andhra Pradesh.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. School Statistics Dashboard Widget */}
       <section style={{ padding: "3rem 0", backgroundColor: "#f1f5f9" }}>
         <div className="container">
           <div style={{ textAlign: "center", marginBottom: "2.5rem" }}>

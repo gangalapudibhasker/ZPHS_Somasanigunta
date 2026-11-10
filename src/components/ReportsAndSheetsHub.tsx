@@ -108,11 +108,32 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
       ).toFixed(1)
     : "94.0";
 
-  const castes = ["OC", "BC-A", "BC-B", "BC-C", "BC-D", "BC-E", "SC", "ST"];
-  const casteSummary = castes.map((c) => ({
-    caste: c,
-    count: students.filter((s) => (s.caste || "OC").toUpperCase() === c).length,
-  }));
+  const normalizeCaste = (raw: string) => {
+    const val = (raw || "").trim().toUpperCase();
+    if (!val || val === "OC" || val === "GENERAL" || val === "OPEN") return "OC";
+    if (val === "OBC" || val === "BC") return "OBC";
+    return val;
+  };
+
+  const hasSubBc = students.some((s) =>
+    ["BC-A", "BC-B", "BC-C", "BC-D", "BC-E"].includes(normalizeCaste(s.caste))
+  );
+
+  const castes = hasSubBc
+    ? ["OC", "OBC", "BC-A", "BC-B", "BC-C", "BC-D", "BC-E", "SC", "ST"]
+    : ["OC", "OBC", "SC", "ST"];
+
+  const casteSummary = castes.map((c) => {
+    const list = students.filter((s) => normalizeCaste(s.caste) === c);
+    const boys = list.filter((s) => s.gender === "Boy" || s.gender === "Male").length;
+    const girls = list.filter((s) => s.gender === "Girl" || s.gender === "Female").length;
+    return {
+      caste: c,
+      boys,
+      girls,
+      count: list.length,
+    };
+  });
 
   const thStyle: React.CSSProperties = {
     border: "1.5px solid #1e293b",
@@ -287,6 +308,8 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
               <thead>
                 <tr>
                   <th style={thStyle}>Category</th>
+                  <th style={{ ...thStyle, textAlign: "center" }}>Boys</th>
+                  <th style={{ ...thStyle, textAlign: "center" }}>Girls</th>
                   <th style={{ ...thStyle, textAlign: "center" }}>No. of Students</th>
                 </tr>
               </thead>
@@ -294,6 +317,12 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
                 {casteSummary.map((item) => (
                   <tr key={item.caste}>
                     <td style={{ ...tdStyle, fontWeight: 700 }}>{item.caste}</td>
+                    <td style={{ ...tdStyle, textAlign: "center", fontWeight: 600, color: "#1d4ed8" }}>
+                      {item.boys}
+                    </td>
+                    <td style={{ ...tdStyle, textAlign: "center", fontWeight: 600, color: "#be185d" }}>
+                      {item.girls}
+                    </td>
                     <td style={{ ...tdStyle, textAlign: "center", fontWeight: 800, color: "#1e3a8a" }}>
                       {item.count}
                     </td>
@@ -301,6 +330,12 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
                 ))}
                 <tr style={{ backgroundColor: "#f1f5f9" }}>
                   <td style={{ ...tdStyle, fontWeight: 800 }}>TOTAL</td>
+                  <td style={{ ...tdStyle, textAlign: "center", fontWeight: 800, color: "#1d4ed8" }}>
+                    {casteSummary.reduce((a, b) => a + b.boys, 0)}
+                  </td>
+                  <td style={{ ...tdStyle, textAlign: "center", fontWeight: 800, color: "#be185d" }}>
+                    {casteSummary.reduce((a, b) => a + b.girls, 0)}
+                  </td>
                   <td style={{ ...tdStyle, textAlign: "center", fontWeight: 900 }}>
                     {students.length}
                   </td>

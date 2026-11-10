@@ -209,7 +209,7 @@ img {
 .form-group {
   margin-bottom: 1.25rem;
   display: flex;
-  flex-col: column;
+  flex-direction: column;
 }
 .form-label {
   font-size: 0.875rem;

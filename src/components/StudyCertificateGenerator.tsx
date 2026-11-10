@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Search, Printer, Award, FileText, CheckCircle2, UserPlus, Edit3, X } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Search, Printer, Award, FileText, CheckCircle2, UserPlus, Edit3, X, Camera, RefreshCw, Upload } from "lucide-react";
 import SchoolAdmissionFormDocument, {
   AdmissionFormExtraData,
   parseAdmissionFormData,
@@ -113,6 +113,82 @@ export default function StudyCertificateGenerator() {
   const [formSuccess, setFormSuccess] = useState("");
   const [formPhoto, setFormPhoto] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraFacing, setCameraFacing] = useState<"user" | "environment">("environment");
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const mobileCameraInputRef = useRef<HTMLInputElement | null>(null);
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    setCameraOpen(false);
+  };
+
+  const startCamera = async (facing: "user" | "environment" = cameraFacing) => {
+    try {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        mobileCameraInputRef.current?.click();
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: facing, width: { ideal: 640 }, height: { ideal: 800 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      setCameraOpen(true);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => {});
+        }
+      }, 80);
+    } catch {
+      mobileCameraInputRef.current?.click();
+    }
+  };
+
+  const handleToggleCameraFacing = () => {
+    const next = cameraFacing === "environment" ? "user" : "environment";
+    setCameraFacing(next);
+    startCamera(next);
+  };
+
+  const handleCapturePhoto = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const canvas = document.createElement("canvas");
+    const w = video.videoWidth || 480;
+    const h = video.videoHeight || 600;
+    canvas.width = 360;
+    canvas.height = 440;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      // Center-crop to passport ratio (360x440)
+      const targetRatio = 360 / 440;
+      const srcRatio = w / h;
+      let sx = 0,
+        sy = 0,
+        sw = w,
+        sh = h;
+      if (srcRatio > targetRatio) {
+        sw = h * targetRatio;
+        sx = (w - sw) / 2;
+      } else {
+        sh = w / targetRatio;
+        sy = (h - sh) / 2;
+      }
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, 360, 440);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.88);
+      setFormPhoto(dataUrl);
+    }
+    stopCamera();
+  };
 
   const [formData, setFormData] = useState({
     name: "",
@@ -605,7 +681,7 @@ export default function StudyCertificateGenerator() {
                     Upon saving, the student is added to the school database and the 1-page A4 Admission Form is ready to print.
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.85rem", flexWrap: "wrap" }}>
                   <div
                     style={{
                       width: "68px",
@@ -625,12 +701,96 @@ export default function StudyCertificateGenerator() {
                       <span style={{ fontSize: "9px", color: "#64748b", fontWeight: 600 }}>Passport Photo</span>
                     )}
                   </div>
-                  <label className="btn btn-secondary" style={{ fontSize: "0.8rem", cursor: "pointer" }}>
-                    {photoUploading ? "Uploading..." : "Upload Student Photo"}
-                    <input type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhotoUpload} />
-                  </label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
+                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                      <label className="btn btn-secondary" style={{ fontSize: "0.8rem", cursor: "pointer", padding: "0.45rem 0.85rem" }}>
+                        <Upload size={14} /> {photoUploading ? "Uploading..." : "Upload Student Photo"}
+                        <input type="file" accept="image/*" style={{ display: "none" }} onChange={handlePhotoUpload} />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => startCamera()}
+                        className="btn btn-primary"
+                        style={{ fontSize: "0.8rem", padding: "0.45rem 0.85rem", backgroundColor: "#059669" }}
+                      >
+                        <Camera size={14} /> Take Photo (Camera)
+                      </button>
+                      <input
+                        ref={mobileCameraInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        style={{ display: "none" }}
+                        onChange={handlePhotoUpload}
+                      />
+                    </div>
+                    <div style={{ fontSize: "0.72rem", color: "#64748b" }}>
+                      Upload from device or capture live photo using Camera
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {cameraOpen && (
+                <div
+                  style={{
+                    border: "2px solid #059669",
+                    borderRadius: "10px",
+                    padding: "1rem",
+                    marginBottom: "1rem",
+                    backgroundColor: "#0f172a",
+                    color: "white",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "0.75rem",
+                  }}
+                >
+                  <div style={{ fontSize: "0.9rem", fontWeight: 700 }}>
+                    Live Camera Preview — Position student face in frame
+                  </div>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    style={{
+                      width: "240px",
+                      height: "290px",
+                      objectFit: "cover",
+                      borderRadius: "8px",
+                      border: "2px solid #10b981",
+                      backgroundColor: "#000",
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: "0.65rem", flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      onClick={handleCapturePhoto}
+                      className="btn btn-primary"
+                      style={{ backgroundColor: "#10b981", fontSize: "0.85rem" }}
+                    >
+                      <Camera size={15} /> Capture Passport Photo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleToggleCameraFacing}
+                      className="btn btn-secondary"
+                      style={{ fontSize: "0.85rem" }}
+                    >
+                      <RefreshCw size={15} /> Switch Front / Back Camera
+                    </button>
+                    <button
+                      type="button"
+                      onClick={stopCamera}
+                      className="btn btn-danger"
+                      style={{ fontSize: "0.85rem" }}
+                    >
+                      <X size={15} /> Close Camera
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Items 1 - 4 */}
               <div style={{ border: "1px solid #cbd5e1", borderRadius: "8px", padding: "1rem", marginBottom: "1rem", backgroundColor: "#ffffff" }}>

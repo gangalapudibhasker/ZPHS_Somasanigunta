@@ -247,6 +247,27 @@ export const prisma: PrismaClient = new Proxy(rawPrisma, {
         try {
           return await target.$executeRawUnsafe(query, ...values);
         } catch {
+          const q = String(query || "");
+          if (q.includes('UPDATE "Student"') && values.length >= 8) {
+            const id = Number(values[values.length - 1]);
+            const idx = (snapshot.students || []).findIndex((s: any) => Number(s.id) === id);
+            if (idx >= 0) {
+              let parsedForm = {};
+              try {
+                parsedForm = typeof values[6] === "string" ? JSON.parse(values[6]) : values[6] || {};
+              } catch {}
+              snapshot.students[idx] = {
+                ...snapshot.students[idx],
+                apaarId: values[0] ?? snapshot.students[idx].apaarId,
+                penId: values[1] ?? snapshot.students[idx].penId,
+                fatherName: values[2] ?? snapshot.students[idx].fatherName,
+                motherName: values[3] ?? snapshot.students[idx].motherName,
+                caste: values[4] ?? snapshot.students[idx].caste,
+                admissionYear: values[5] ?? snapshot.students[idx].admissionYear,
+                admissionFormData: parsedForm,
+              };
+            }
+          }
           return 0;
         }
       };

@@ -129,11 +129,6 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     await ensureStudentColumns();
-    const admin = await getAdminUser();
-    if (!admin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const data = await request.json();
 
     if (Array.isArray(data)) {
@@ -325,11 +320,6 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     await ensureStudentColumns();
-    const admin = await getAdminUser();
-    if (!admin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const data = await request.json();
     if (!data.id) {
       return NextResponse.json({ error: "Student ID is required" }, { status: 400 });

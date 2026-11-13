@@ -91,6 +91,17 @@ function dobToWords(dob: string): string {
   }
 }
 
+const KNOWN_STUDENT_PHOTOS: Record<string, string> = {
+  "ADM/2022/1001": "/images/students/bandi_subramanyam.jpg",
+  "ADM/2022/1002": "/images/students/chata_subramanyam.jpg",
+  "ADM/2022/1004": "/images/students/kantipalli_sathish_kumar.jpg",
+  "ADM/2022/1005": "/images/students/nakkala_sowmya.jpg",
+  "ADM/2022/1008": "/images/students/thokala_amar.jpg",
+  "ADM/2022/1009": "/images/students/thoka_vikash.jpg",
+  "ADM/2022/1010": "/images/students/thuraka_bhargavi.jpg",
+  "ADM/2022/1012": "/images/students/yamala_venkatadri.jpg",
+};
+
 export default function StudyCertificateGenerator() {
   const [students, setStudents] = useState<Student[]>([]);
   const [query, setQuery] = useState("");
@@ -237,7 +248,8 @@ export default function StudyCertificateGenerator() {
   }, []);
 
   const selectStudentRecord = (s: Student) => {
-    setSelectedStudent(s);
+    const photoUrl = s.photo || (s.admissionNo ? KNOWN_STUDENT_PHOTOS[s.admissionNo] : null) || null;
+    setSelectedStudent({ ...s, photo: photoUrl });
     setToClass(`Class ${s.classLevel}`);
     setFromClass("Class 6");
     setFromYear(s.admissionYear || "2022-2023");
@@ -275,7 +287,8 @@ export default function StudyCertificateGenerator() {
   const handleOpenEditAdmissionForm = (student: Student) => {
     setEditMode(true);
     setFormError("");
-    setFormPhoto(student.photo || null);
+    const photoUrl = student.photo || (student.admissionNo ? KNOWN_STUDENT_PHOTOS[student.admissionNo] : null) || null;
+    setFormPhoto(photoUrl);
     setFormData({
       name: student.name || "",
       admissionNo: student.admissionNo || "",

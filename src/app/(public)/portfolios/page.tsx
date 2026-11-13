@@ -4,6 +4,17 @@ import StudentPortfolioList from "@/components/StudentPortfolioList";
 
 export const revalidate = 0;
 
+const KNOWN_STUDENT_PHOTOS: Record<string, string> = {
+  "ADM/2022/1001": "/images/students/bandi_subramanyam.jpg",
+  "ADM/2022/1002": "/images/students/chata_subramanyam.jpg",
+  "ADM/2022/1004": "/images/students/kantipalli_sathish_kumar.jpg",
+  "ADM/2022/1005": "/images/students/nakkala_sowmya.jpg",
+  "ADM/2022/1008": "/images/students/thokala_amar.jpg",
+  "ADM/2022/1009": "/images/students/thoka_vikash.jpg",
+  "ADM/2022/1010": "/images/students/thuraka_bhargavi.jpg",
+  "ADM/2022/1012": "/images/students/yamala_venkatadri.jpg",
+};
+
 export default async function PortfoliosPage() {
   const students = await prisma.student.findMany({
     orderBy: [
@@ -34,8 +45,10 @@ export default async function PortfoliosPage() {
         parsedAdmissionFormData = JSON.parse(extra.admissionFormData);
       } catch {}
     }
+    const photoUrl = s.photo || (s.admissionNo ? KNOWN_STUDENT_PHOTOS[s.admissionNo] : null) || null;
     return {
       ...s,
+      photo: photoUrl,
       apaarId: extra?.apaarId || "",
       penId: extra?.penId || "",
       fatherName: extra?.fatherName || s.parentName || "",

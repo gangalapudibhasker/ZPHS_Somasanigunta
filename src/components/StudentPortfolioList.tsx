@@ -50,6 +50,17 @@ interface Student {
   admissionFormData?: any;
 }
 
+const KNOWN_STUDENT_PHOTOS: Record<string, string> = {
+  "ADM/2022/1001": "/images/students/bandi_subramanyam.jpg",
+  "ADM/2022/1002": "/images/students/chata_subramanyam.jpg",
+  "ADM/2022/1004": "/images/students/kantipalli_sathish_kumar.jpg",
+  "ADM/2022/1005": "/images/students/nakkala_sowmya.jpg",
+  "ADM/2022/1008": "/images/students/thokala_amar.jpg",
+  "ADM/2022/1009": "/images/students/thoka_vikash.jpg",
+  "ADM/2022/1010": "/images/students/thuraka_bhargavi.jpg",
+  "ADM/2022/1012": "/images/students/yamala_venkatadri.jpg",
+};
+
 export default function StudentPortfolioList({ initialStudents }: { initialStudents: Student[] }) {
   const [students, setStudents] = useState<Student[]>(initialStudents);
   const [selectedClass, setSelectedClass] = useState<number | "ALL">("ALL");
@@ -218,6 +229,7 @@ export default function StudentPortfolioList({ initialStudents }: { initialStude
             const placeholderAvatar = isGirl
               ? "/images/placeholders/student_female.svg"
               : "/images/placeholders/student_male.svg";
+            const studentPhoto = s.photo || (s.admissionNo ? KNOWN_STUDENT_PHOTOS[s.admissionNo] : null) || null;
 
             return (
               <div
@@ -242,7 +254,7 @@ export default function StudentPortfolioList({ initialStudents }: { initialStude
                       borderRadius: "8px",
                       overflow: "hidden",
                       backgroundColor: "#f8fafc",
-                      border: s.photo ? "2px solid #1e3a8a" : "1.5px dashed #cbd5e1",
+                      border: studentPhoto ? "2px solid #1e3a8a" : "1.5px dashed #cbd5e1",
                       boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
                       flexShrink: 0,
                       display: "flex",
@@ -251,9 +263,9 @@ export default function StudentPortfolioList({ initialStudents }: { initialStude
                       position: "relative",
                     }}
                   >
-                    {s.photo ? (
+                    {studentPhoto ? (
                       <img
-                        src={s.photo}
+                        src={studentPhoto}
                         alt={s.name}
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                       />
@@ -419,7 +431,9 @@ export default function StudentPortfolioList({ initialStudents }: { initialStude
       )}
 
       {/* 3. Detailed Full Portfolio Modal View */}
-      {selectedStudent && (
+      {selectedStudent && (() => {
+        const modalPhoto = selectedStudent.photo || (selectedStudent.admissionNo ? KNOWN_STUDENT_PHOTOS[selectedStudent.admissionNo] : null) || null;
+        return (
         <div className="lightbox" onClick={() => setSelectedStudent(null)}>
           <div
             className="card"
@@ -470,7 +484,7 @@ export default function StudentPortfolioList({ initialStudents }: { initialStude
                   borderRadius: "10px",
                   overflow: "hidden",
                   backgroundColor: "#f8fafc",
-                  border: selectedStudent.photo ? "3px solid #1e3a8a" : "2px dashed #cbd5e1",
+                  border: modalPhoto ? "3px solid #1e3a8a" : "2px dashed #cbd5e1",
                   boxShadow: "0 4px 10px rgba(0,0,0,0.12)",
                   flexShrink: 0,
                   display: "flex",
@@ -478,9 +492,9 @@ export default function StudentPortfolioList({ initialStudents }: { initialStude
                   justifyContent: "center",
                 }}
               >
-                {selectedStudent.photo ? (
+                {modalPhoto ? (
                   <img
-                    src={selectedStudent.photo}
+                    src={modalPhoto}
                     alt={selectedStudent.name}
                     style={{ width: "100%", height: "100%", objectFit: "cover" }}
                   />
@@ -723,7 +737,8 @@ export default function StudentPortfolioList({ initialStudents }: { initialStude
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

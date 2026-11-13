@@ -767,7 +767,7 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
             <span className="badge badge-primary">{files.length} Documents</span>
             <a
-              href="https://drive.google.com/drive/u/0/my-drive"
+              href="https://drive.google.com/drive/folders/15_Msm7xfJPsr9cx5jF8IIXFV44wEoeh7"
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-secondary"

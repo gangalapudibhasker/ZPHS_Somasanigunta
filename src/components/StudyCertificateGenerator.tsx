@@ -102,6 +102,34 @@ const KNOWN_STUDENT_PHOTOS: Record<string, string> = {
   "ADM/2022/1012": "/images/students/yamala_venkatadri.jpg",
 };
 
+const LOCAL_STUDENTS_STORAGE_KEY = "zphs_local_registered_students";
+
+function getLocalRegisteredStudents(): Student[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_STUDENTS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalRegisteredStudent(student: Student) {
+  if (typeof window === "undefined") return;
+  try {
+    const existing = getLocalRegisteredStudents();
+    const idx = existing.findIndex(
+      (s) => (student.id && s.id === student.id) || s.admissionNo === student.admissionNo
+    );
+    if (idx >= 0) {
+      existing[idx] = student;
+    } else {
+      existing.unshift(student);
+    }
+    localStorage.setItem(LOCAL_STUDENTS_STORAGE_KEY, JSON.stringify(existing));
+  } catch {}
+}
+
 export default function StudyCertificateGenerator() {
   const [students, setStudents] = useState<Student[]>([]);
   const [query, setQuery] = useState("");
@@ -225,21 +253,40 @@ export default function StudyCertificateGenerator() {
     try {
       const r = await fetch("/api/students");
       const data = await r.json();
-      if (Array.isArray(data)) {
-        setStudents(data);
+      let combined: Student[] = Array.isArray(data) ? [...data] : [];
+
+      // Merge with locally registered students so they never disappear on refresh
+      const localStudents = getLocalRegisteredStudents();
+      for (const loc of localStudents) {
+        const existingIdx = combined.findIndex(
+          (s) => s.admissionNo === loc.admissionNo || (loc.id && s.id === loc.id)
+        );
+        if (existingIdx >= 0) {
+          combined[existingIdx] = { ...combined[existingIdx], ...loc };
+        } else {
+          combined.unshift(loc);
+        }
+      }
+
+      if (combined.length > 0) {
+        setStudents(combined);
         if (selectId) {
-          const found = data.find((s: Student) => s.id === selectId);
+          const found = combined.find((s: Student) => s.id === selectId || s.admissionNo === String(selectId));
           if (found) {
             selectStudentRecord(found);
             return;
           }
         }
-        if (!selectedStudent && data.length > 0) {
-          selectStudentRecord(data[0]);
+        if (!selectedStudent) {
+          selectStudentRecord(combined[0]);
         }
       }
     } catch (err) {
       console.error(err);
+      const localStudents = getLocalRegisteredStudents();
+      if (localStudents.length > 0) {
+        setStudents(localStudents);
+      }
     }
   };
 
@@ -366,16 +413,41 @@ export default function StudyCertificateGenerator() {
         throw new Error(saved.error || "Failed to save student");
       }
 
+      const savedStudent: Student = {
+        id: saved.id || (editMode && selectedStudent ? selectedStudent.id : Date.now()),
+        name: String(payload.name),
+        admissionNo: String(payload.admissionNo),
+        rollNo: String(payload.rollNo || "1"),
+        classLevel: Number(payload.classLevel || 6),
+        gender: String(payload.gender || "Male"),
+        dob: String(payload.dob || ""),
+        bloodGroup: String(payload.bloodGroup || "O+"),
+        parentName: String(payload.parentName || ""),
+        fatherName: String(payload.fatherName || ""),
+        motherName: String(payload.motherName || ""),
+        mobileNo: String(payload.mobileNo || ""),
+        address: String(payload.address || ""),
+        photo: formPhoto || null,
+        aadhaarNo: String(payload.aadhaarNo || ""),
+        apaarId: String(payload.apaarId || ""),
+        penId: String(payload.penId || ""),
+        caste: String(payload.caste || ""),
+        admissionYear: String(payload.admissionYear || "2026-2027"),
+        admissionFormData: extraForm,
+      };
+
+      saveLocalRegisteredStudent(savedStudent);
+
       setShowModal(false);
       setDocType("ADMISSION_FORM");
       setFormSuccess(
         editMode
-          ? `Updated Admission Form for ${saved.name}`
-          : `New student "${saved.name}" registered and Admission Form generated!`
+          ? `Updated Admission Form for ${savedStudent.name} (Saved Permanently)`
+          : `New student "${savedStudent.name}" registered permanently and Admission Form generated!`
       );
       setTimeout(() => setFormSuccess(""), 5000);
-      await loadStudents(saved.id);
-      selectStudentRecord(saved);
+      await loadStudents(savedStudent.id);
+      selectStudentRecord(savedStudent);
     } catch (err: any) {
       setFormError(err.message || "Failed to save student");
     } finally {

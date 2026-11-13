@@ -74,12 +74,41 @@ export default function StudentPortfolioList({ initialStudents }: { initialStude
     fetch("/api/students")
       .then((r) => r.json())
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setStudents(data);
-        }
+        let combined: Student[] = Array.isArray(data) && data.length > 0 ? [...data] : [...initialStudents];
+        try {
+          const raw = localStorage.getItem("zphs_local_registered_students");
+          const localStudents = raw ? JSON.parse(raw) : [];
+          if (Array.isArray(localStudents)) {
+            for (const loc of localStudents) {
+              const existingIdx = combined.findIndex(
+                (s) => s.admissionNo === loc.admissionNo || (loc.id && s.id === loc.id)
+              );
+              if (existingIdx >= 0) {
+                combined[existingIdx] = { ...combined[existingIdx], ...loc };
+              } else {
+                combined.unshift(loc);
+              }
+            }
+          }
+        } catch {}
+        setStudents(combined);
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => {
+        try {
+          const raw = localStorage.getItem("zphs_local_registered_students");
+          const localStudents = raw ? JSON.parse(raw) : [];
+          if (Array.isArray(localStudents) && localStudents.length > 0) {
+            const combined = [...initialStudents];
+            for (const loc of localStudents) {
+              if (!combined.some((s) => s.admissionNo === loc.admissionNo)) {
+                combined.unshift(loc);
+              }
+            }
+            setStudents(combined);
+          }
+        } catch {}
+      });
+  }, [initialStudents]);
 
   // Filter Logic
   const filteredStudents = students.filter((student) => {

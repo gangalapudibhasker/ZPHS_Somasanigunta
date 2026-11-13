@@ -18,6 +18,7 @@ import {
   AlertCircle,
   File,
   Image as ImageIcon,
+  FolderOpen,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
@@ -34,6 +35,41 @@ const ZPHS_STAFF_MEMBERS = [
   "Sri Layesetty Muneeswaraiah — School Assistant (Telugu)",
   "Smt. Vasamthamma — Support Staff (Aya)",
 ];
+
+const LOCAL_FILES_STORAGE_KEY = "zphs_uploaded_school_files";
+
+function getLocalSchoolFiles(): any[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_FILES_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalSchoolFile(record: any) {
+  if (typeof window === "undefined") return;
+  try {
+    const existing = getLocalSchoolFiles();
+    const idx = existing.findIndex((f) => (record.id && f.id === record.id) || f.originalName === record.originalName);
+    if (idx >= 0) {
+      existing[idx] = record;
+    } else {
+      existing.unshift(record);
+    }
+    localStorage.setItem(LOCAL_FILES_STORAGE_KEY, JSON.stringify(existing));
+  } catch {}
+}
+
+function removeLocalSchoolFile(id: number) {
+  if (typeof window === "undefined") return;
+  try {
+    const existing = getLocalSchoolFiles();
+    const updated = existing.filter((f) => f.id !== id);
+    localStorage.setItem(LOCAL_FILES_STORAGE_KEY, JSON.stringify(updated));
+  } catch {}
+}
 
 export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boolean }) {
   const [students, setStudents] = useState<any[]>([]);
@@ -64,11 +100,18 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
     try {
       const res = await fetch("/api/files");
       const data = await res.json();
-      if (Array.isArray(data)) {
-        setFiles(data);
+      let combined: any[] = Array.isArray(data) ? [...data] : [];
+
+      const localFiles = getLocalSchoolFiles();
+      for (const loc of localFiles) {
+        if (!combined.some((f) => (loc.id && f.id === loc.id) || f.originalName === loc.originalName)) {
+          combined.unshift(loc);
+        }
       }
+      setFiles(combined);
     } catch (e) {
       console.error("Failed to fetch office files:", e);
+      setFiles(getLocalSchoolFiles());
     } finally {
       setLoadingFiles(false);
     }
@@ -157,13 +200,27 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
         throw new Error(recordData.error || "Failed to save file record in database.");
       }
 
-      // 3. Reset form and refresh list
+      // 3. Save locally to guarantee persistence across browser refreshes
+      const localRecord = {
+        id: recordData.id || Date.now(),
+        originalName,
+        filename: upData.filename || fileToUpload.name,
+        filePath: upData.url,
+        category: fileCategory,
+        uploadDate: new Date().toISOString(),
+        version: recordData.version || 1,
+        uploadedBy: teacherName.trim() || "School Teacher / Faculty",
+        fileType: upData.filename?.toLowerCase().endsWith(".pdf") ? "PDF" : "DOCUMENT",
+      };
+      saveLocalSchoolFile(localRecord);
+
+      // 4. Reset form and refresh list
       setFileToUpload(null);
       setFileTitle("");
       setTeacherName("");
       setUploadMessage({
         type: "success",
-        text: `"${originalName}" has been successfully uploaded and added to the School Repository!`,
+        text: `"${originalName}" has been successfully uploaded and added to the School Repository! (Saved Permanently)`,
       });
       fetchFiles();
     } catch (err: any) {
@@ -186,6 +243,7 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
 
     setDeletingId(id);
     try {
+      removeLocalSchoolFile(id);
       const res = await fetch(`/api/files?id=${id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok) {
@@ -706,8 +764,30 @@ export default function ReportsAndSheetsHub({ isAdmin = false }: { isAdmin?: boo
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
             <span className="badge badge-primary">{files.length} Documents</span>
+            <a
+              href="https://drive.google.com/drive/u/0/my-drive"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-secondary"
+              style={{
+                fontSize: "0.85rem",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                backgroundColor: "#ffffff",
+                color: "#1e3a8a",
+                border: "1.5px solid #cbd5e1",
+                fontWeight: 700,
+                textDecoration: "none",
+                padding: "0.45rem 0.85rem",
+              }}
+              title="Open Official Google Drive Storage"
+            >
+              <FolderOpen size={16} style={{ color: "#ea4335" }} />
+              Open Google Drive
+            </a>
             <button
               type="button"
               onClick={() => {
